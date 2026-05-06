@@ -1,0 +1,111 @@
+{
+  "version": "1.0",
+  "published_at": "2026-07-04",
+  "spj_code_url": "https://www.spj.org/ethicscode.asp",
+  "composite_weights": {
+    "pillar_1": 0.30,
+    "pillar_2": 0.20,
+    "pillar_3": 0.30,
+    "pillar_4": 0.20
+  },
+  "pillars": {
+    "pillar_1": {
+      "name": "Seek Truth and Report It",
+      "description": "Ethical journalism treats truth as a cornerstone. It holds accuracy above all else and is transparent about uncertainty.",
+      "dimensions": {
+        "headline_fidelity": {
+          "weight": 0.15,
+          "description": "Does the headline accurately represent the article body? Sensationalized or misleading headlines that overstate findings are flagged.",
+          "minimum_corpus": 10,
+          "confidence": "high"
+        },
+        "attribution_patterns": {
+          "weight": 0.12,
+          "description": "How frequently are factual claims attributed to named, on-record sources? Anonymous sourcing is noted; unattributed factual claims are flagged.",
+          "minimum_corpus": 10,
+          "confidence": "high"
+        },
+        "hedging_language": {
+          "weight": 0.08,
+          "description": "Does the journalist appropriately use hedging language (alleged, accused, reportedly) when facts are not established?",
+          "minimum_corpus": 10,
+          "confidence": "medium"
+        }
+      }
+    },
+    "pillar_2": {
+      "name": "Minimize Harm",
+      "description": "Ethical journalism treats sources, subjects, colleagues, and members of the public as human beings deserving of respect.",
+      "dimensions": {
+        "language_patterns": {
+          "weight": 0.10,
+          "description": "Does word choice dehumanize, stigmatize, or inflame? Patterns across the corpus are analyzed — single instances are not scored.",
+          "minimum_corpus": 20,
+          "confidence": "medium"
+        },
+        "sentiment_differential": {
+          "weight": 0.10,
+          "description": "Is there a statistically significant difference in tone or word choice when covering politically opposed subjects?",
+          "minimum_corpus": 20,
+          "confidence": "medium"
+        }
+      }
+    },
+    "pillar_3": {
+      "name": "Act Independently",
+      "description": "Ethical journalism means avoiding conflicts of interest, real or perceived. Journalists owe allegiance to the public, not to sources, advertisers, or political actors.",
+      "dimensions": {
+        "financial_conflicts": {
+          "weight": 0.15,
+          "description": "FEC records are checked for political contributions. Contributions are reported as fact; the scoring reflects the degree of conflict with covered subjects.",
+          "minimum_corpus": 1,
+          "confidence": "high"
+        },
+        "source_diversity": {
+          "weight": 0.10,
+          "description": "Across the corpus, how diverse is the range of sources cited? Overreliance on a narrow set of affiliated sources is flagged.",
+          "minimum_corpus": 15,
+          "confidence": "medium"
+        },
+        "social_media_independence": {
+          "weight": 0.05,
+          "description": "Do public social posts reveal advocacy for political positions or causes that may conflict with independent reporting?",
+          "minimum_corpus": 10,
+          "confidence": "low"
+        }
+      }
+    },
+    "pillar_4": {
+      "name": "Be Accountable and Transparent",
+      "description": "Ethical journalism means acknowledging errors promptly and explaining news judgments. Accountability is demonstrated through the corrections record.",
+      "dimensions": {
+        "corrections_frequency": {
+          "weight": 0.10,
+          "description": "How often are corrections issued relative to corpus size?",
+          "minimum_corpus": 1,
+          "confidence": "high"
+        },
+        "corrections_velocity": {
+          "weight": 0.05,
+          "description": "How quickly are corrections issued after errors are identified?",
+          "minimum_corpus": 1,
+          "confidence": "high"
+        },
+        "corrections_severity": {
+          "weight": 0.05,
+          "description": "What is the nature of corrections? Factual errors carry more weight than clarifications.",
+          "minimum_corpus": 1,
+          "confidence": "high"
+        }
+      }
+    }
+  },
+  "data_sufficiency": {
+    "note": "Dimensions are not scored until minimum corpus thresholds are met. Profiles are published with placeholder status until all pillar thresholds are satisfied.",
+    "statuses": {
+      "collecting": "Data collection in progress. No score is shown.",
+      "insufficient": "Data collected but below minimum threshold for this dimension. Marked as insufficient data rather than scored.",
+      "scored": "Minimum threshold met. Score is published with full citation trail."
+    }
+  }
+}

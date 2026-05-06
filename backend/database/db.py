@@ -1,0 +1,157 @@
+"""
+Database connection and core save functions.
+Uses asyncpg directly — plain SQL, no ORM magic.
+"""
+
+import os
+import asyncpg
+
+
+def _dsn() -> str:
+    url = os.environ["DATABASE_URL"]
+    # asyncpg uses postgresql:// not postgresql+asyncpg://
+    return url.replace("postgresql+asyncpg://", "postgresql://")
+
+
+async def get_conn() -> asyncpg.Connection:
+    return await asyncpg.connect(_dsn())
+
+
+async def save_journalist(conn, *, full_name: str, slug: str, primary_outlet: str, guardian_tag: str = None) -> str:
+    """Insert journalist if not exists. Returns their UUID."""
+    row = await conn.fetchrow(
+        """
+        INSERT INTO journalists (full_name, slug, primary_outlet, guardian_tag)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (slug) DO UPDATE
+            SET primary_outlet = EXCLUDED.primary_outlet,
+                guardian_tag   = EXCLUDED.guardian_tag,
+                updated_at     = NOW()
+        RETURNING id
+        """,
+        full_name, slug, primary_outlet, guardian_tag,
+    )
+    return str(row["id"])
+
+
+async def save_publication(conn, *, name: str, domain: str, api_source: str) -> str:
+    """Insert publication if not exists. Returns their UUID."""
+    row = await conn.fetchrow(
+        """
+        INSERT INTO publications (name, domain, api_source)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (domain) DO UPDATE
+            SET api_source = EXCLUDED.api_source
+        RETURNING id
+        """,
+        name, domain, api_source,
+    )
+    return str(row["id"])
+
+
+async def save_articles(conn, journalist_id: str, publication_id: str, articles: list) -> int:
+    """Bulk insert articles. Skips duplicates by guardian_id. Returns count inserted."""
+    inserted = 0
+    for a in articles:
+        # Strip timezone info — store everything as UTC naive
+        published_at = a.published_at.replace(tzinfo=None) if a.published_at.tzinfo else a.published_at
+        result = await conn.execute(
+            """
+            INSERT INTO articles
+                (journalist_id, publication_id, headline, subheadline, body,
+                 url, published_at, section, word_count, source_api, guardian_id)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+            ON CONFLICT (guardian_id) DO NOTHING
+            """,
+            journalist_id, publication_id,
+            a.headline, a.subheadline, a.body,
+            a.url, published_at, a.section, a.word_count,
+            "guardian", a.guardian_id,
+        )
+        if result == "INSERT 0 1":
+            inserted += 1
+    return inserted
+
+
+async def save_analysis_result(conn, journalist_id: str, analysis) -> str:
+    """Store the raw Claude analysis result. Returns UUID."""
+    import json
+    row = await conn.fetchrow(
+        """
+        INSERT INTO analysis_results
+            (journalist_id, analysis_type, methodology_version,
+             corpus_size, raw_output, model_id, prompt_version)
+        VALUES ($1,$2,$3,$4,$5,$6,$7)
+        RETURNING id
+        """,
+        journalist_id,
+        analysis.analysis_type,
+        analysis.methodology_version,
+        analysis.corpus_size,
+        json.dumps(analysis.raw_output),
+        analysis.model_id,
+        analysis.prompt_version,
+    )
+    return str(row["id"])
+
+
+async def save_citations(conn, analysis_result_id: str, citations: list, article_id_map: dict):
+    """
+    Store validated citations linked to their analysis result.
+    article_id_map: {guardian_id: db_uuid} so we can link citations to articles.
+    """
+    for c in citations:
+        article_db_id = article_id_map.get(c.article_id) if c.article_id else None
+        await conn.execute(
+            """
+            INSERT INTO citations
+                (analysis_result_id, article_id, cited_text, dimension, flag_type, flag_value)
+            VALUES ($1,$2,$3,$4,$5,$6)
+            """,
+            analysis_result_id,
+            article_db_id,
+            c.cited_text,
+            c.dimension,
+            c.flag_type,
+            c.flag_value,
+        )
+
+
+async def save_pillar_scores(conn, journalist_id: str, scores: dict, corpus_size: int, methodology_version: str):
+    """Store pillar and composite scores."""
+    import json
+    await conn.execute(
+        """
+        INSERT INTO pillar_scores
+            (journalist_id, methodology_version,
+             pillar_1_score, pillar_2_score, pillar_3_score, pillar_4_score,
+             composite_score, corpus_size, dimensions_scored)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+        """,
+        journalist_id, methodology_version,
+        scores.get("pillar_1_score"),
+        scores.get("pillar_2_score"),
+        scores.get("pillar_3_score"),
+        scores.get("pillar_4_score"),
+        scores.get("composite_score"),
+        corpus_size,
+        json.dumps(scores.get("dimensions_scored", {})),
+    )
+
+
+async def get_existing_guardian_ids(conn, journalist_id: str) -> set[str]:
+    """Fetch guardian_ids already stored for this journalist — used for dedup."""
+    rows = await conn.fetch(
+        "SELECT guardian_id FROM articles WHERE journalist_id = $1",
+        journalist_id,
+    )
+    return {r["guardian_id"] for r in rows}
+
+
+async def get_article_id_map(conn, journalist_id: str) -> dict:
+    """Returns {guardian_id: db_uuid} for all stored articles for this journalist."""
+    rows = await conn.fetch(
+        "SELECT id, guardian_id FROM articles WHERE journalist_id = $1",
+        journalist_id,
+    )
+    return {r["guardian_id"]: str(r["id"]) for r in rows}
