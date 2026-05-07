@@ -22,8 +22,9 @@ class Citation:
     dimension: str
     flag_type: Optional[str]
     flag_value: Optional[float]
-    article_id: Optional[str] = None
+    article_id: Optional[str] = None       # set to guardian_id after parsing
     social_post_id: Optional[str] = None
+    article_index: Optional[int] = None    # index into corpus list
 
 
 @dataclass
@@ -41,6 +42,7 @@ class AnalysisResult:
 class BaseAnalyzer(ABC):
     analysis_type: str
     prompt_version: str = "1.0"
+    max_tokens: int = 4096  # override in subclasses that produce verbose output
 
     def __init__(self):
         self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
@@ -67,7 +69,7 @@ class BaseAnalyzer(ABC):
 
         message = self.client.messages.create(
             model=self.model,
-            max_tokens=4096,
+            max_tokens=self.max_tokens,
             messages=[{"role": "user", "content": prompt}],
         )
 
@@ -77,6 +79,11 @@ class BaseAnalyzer(ABC):
         end = raw_text.rfind("}")
         cleaned = raw_text[start:end + 1] if start != -1 and end != -1 else raw_text
         dimensions, citations = self.parse_output(cleaned)
+
+        # Map article_index → guardian_id so citations can be linked to stored articles
+        for c in citations:
+            if c.article_index is not None and c.article_index < len(corpus):
+                c.article_id = corpus[c.article_index].get("guardian_id")
 
         # Validate citations before returning
         valid_citations = self.validate_citations(citations, corpus)

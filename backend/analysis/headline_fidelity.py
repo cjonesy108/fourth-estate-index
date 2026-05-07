@@ -85,6 +85,7 @@ class HeadlineFidelityAnalyzer(BaseAnalyzer):
                         dimension="headline_fidelity",
                         flag_type="headline_mismatch",
                         flag_value=item.get("headline_score"),
+                        article_index=item.get("article_index"),
                     )
                 )
 
