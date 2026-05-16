@@ -14,7 +14,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # expand for production
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://fourth-estate-index.vercel.app",
+    ],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
