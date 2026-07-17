@@ -17,19 +17,20 @@ async def get_conn() -> asyncpg.Connection:
     return await asyncpg.connect(_dsn())
 
 
-async def save_journalist(conn, *, full_name: str, slug: str, primary_outlet: str, guardian_tag: str = None) -> str:
+async def save_journalist(conn, *, full_name: str, slug: str, primary_outlet: str, guardian_tag: str = None, x_handle: str = None) -> str:
     """Insert journalist if not exists. Returns their UUID."""
     row = await conn.fetchrow(
         """
-        INSERT INTO journalists (full_name, slug, primary_outlet, guardian_tag)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO journalists (full_name, slug, primary_outlet, guardian_tag, x_handle)
+        VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (slug) DO UPDATE
             SET primary_outlet = EXCLUDED.primary_outlet,
                 guardian_tag   = EXCLUDED.guardian_tag,
+                x_handle       = COALESCE(EXCLUDED.x_handle, journalists.x_handle),
                 updated_at     = NOW()
         RETURNING id
         """,
-        full_name, slug, primary_outlet, guardian_tag,
+        full_name, slug, primary_outlet, guardian_tag, x_handle,
     )
     return str(row["id"])
 
@@ -49,7 +50,7 @@ async def save_publication(conn, *, name: str, domain: str, api_source: str) -> 
     return str(row["id"])
 
 
-async def save_articles(conn, journalist_id: str, publication_id: str, articles: list) -> int:
+async def save_articles(conn, journalist_id: str, publication_id: str, articles: list, source_api: str = "guardian") -> int:
     """Bulk insert articles. Skips duplicates by guardian_id. Returns count inserted."""
     inserted = 0
     for a in articles:
@@ -66,7 +67,7 @@ async def save_articles(conn, journalist_id: str, publication_id: str, articles:
             journalist_id, publication_id,
             a.headline, a.subheadline, a.body,
             a.url, published_at, a.section, a.word_count,
-            "guardian", a.guardian_id,
+            source_api, a.guardian_id,
         )
         if result == "INSERT 0 1":
             inserted += 1
@@ -139,6 +140,80 @@ async def save_pillar_scores(conn, journalist_id: str, scores: dict, corpus_size
     )
 
 
+async def save_corrections(conn, journalist_id: str, publication_id: str, corrections: list, article_id_map: dict) -> int:
+    """Store corrections linked to journalist and original article where matched."""
+    inserted = 0
+    for c in corrections:
+        # Try to find the original article in the DB by headline match
+        article_db_id = None
+        if c.original_headline:
+            row = await conn.fetchrow(
+                "SELECT id FROM articles WHERE journalist_id = $1 AND headline = $2",
+                journalist_id, c.original_headline,
+            )
+            if row:
+                article_db_id = str(row["id"])
+
+        corrected_at = c.corrected_at.replace(tzinfo=None) if c.corrected_at and c.corrected_at.tzinfo else c.corrected_at
+
+        result = await conn.execute(
+            """
+            INSERT INTO corrections
+                (journalist_id, article_id, publication_id, correction_text,
+                 correction_type, corrected_at, correction_url)
+            VALUES ($1,$2,$3,$4,$5,$6,$7)
+            """,
+            journalist_id, article_db_id, publication_id,
+            c.correction_text, c.correction_type,
+            corrected_at, c.correction_url,
+        )
+        inserted += 1
+    return inserted
+
+
+async def save_social_posts(conn, journalist_id: str, posts: list) -> int:
+    """Bulk insert social posts. Skips duplicates by post_id. Returns count inserted."""
+    inserted = 0
+    for p in posts:
+        posted_at = p.posted_at.replace(tzinfo=None) if p.posted_at.tzinfo else p.posted_at
+        result = await conn.execute(
+            """
+            INSERT INTO social_posts
+                (journalist_id, platform, post_id, content, is_reply, is_quote, posted_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (post_id) DO NOTHING
+            """,
+            journalist_id, p.platform, p.post_id, p.content,
+            p.is_reply, p.is_quote, posted_at,
+        )
+        if result == "INSERT 0 1":
+            inserted += 1
+    return inserted
+
+
+async def get_existing_post_ids(conn, journalist_id: str) -> set[str]:
+    """Fetch post_ids already stored for this journalist — used for dedup."""
+    rows = await conn.fetch(
+        "SELECT post_id FROM social_posts WHERE journalist_id = $1",
+        journalist_id,
+    )
+    return {r["post_id"] for r in rows}
+
+
+async def get_social_posts(conn, journalist_id: str) -> list[dict]:
+    """Fetch all stored social posts for a journalist, newest first."""
+    rows = await conn.fetch(
+        """
+        SELECT post_id, content, is_reply, is_quote, posted_at
+        FROM social_posts
+        WHERE journalist_id = $1
+        ORDER BY posted_at DESC
+        """,
+        journalist_id,
+    )
+    return [dict(r) for r in rows]
+
+
 async def get_existing_guardian_ids(conn, journalist_id: str) -> set[str]:
     """Fetch guardian_ids already stored for this journalist — used for dedup."""
     rows = await conn.fetch(
@@ -155,3 +230,25 @@ async def get_article_id_map(conn, journalist_id: str) -> dict:
         journalist_id,
     )
     return {r["guardian_id"]: str(r["id"]) for r in rows}
+
+
+async def get_articles_for_analysis(conn, journalist_id: str, limit: int = 50) -> list[dict]:
+    """Fetch article content from DB for analysis (used when re-running without new scrape)."""
+    rows = await conn.fetch(
+        """SELECT headline, subheadline, body, guardian_id
+           FROM articles
+           WHERE journalist_id = $1 AND body IS NOT NULL
+           ORDER BY published_at DESC
+           LIMIT $2""",
+        journalist_id, limit,
+    )
+    return [
+        {
+            "body":        r["body"],
+            "headline":    r["headline"],
+            "subheadline": r["subheadline"],
+            "url":         r["guardian_id"],
+            "guardian_id": r["guardian_id"],
+        }
+        for r in rows
+    ]

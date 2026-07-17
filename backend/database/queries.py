@@ -24,6 +24,7 @@ async def list_journalists(conn) -> list[dict]:
             ORDER BY scored_at DESC
             LIMIT 1
         ) ps ON true
+        WHERE j.data_status != 'paused'
         ORDER BY j.full_name
         """
     )
@@ -32,7 +33,7 @@ async def list_journalists(conn) -> list[dict]:
 
 async def get_journalist_profile(conn, slug: str) -> Optional[dict]:
     journalist = await conn.fetchrow(
-        "SELECT * FROM journalists WHERE slug = $1", slug
+        "SELECT * FROM journalists WHERE slug = $1 AND data_status != 'paused'", slug
     )
     if not journalist:
         return None
@@ -71,9 +72,16 @@ async def get_journalist_profile(conn, slug: str) -> Optional[dict]:
         jid,
     )
 
+    scores_dict = dict(scores) if scores else None
+    if scores_dict and scores_dict.get("score_narrative"):
+        # asyncpg returns JSONB as a string — parse it
+        if isinstance(scores_dict["score_narrative"], str):
+            import json
+            scores_dict["score_narrative"] = json.loads(scores_dict["score_narrative"])
+
     return {
         "journalist": dict(journalist),
-        "scores": dict(scores) if scores else None,
+        "scores": scores_dict,
         "fec_records": [dict(r) for r in fec],
         "corrections": [dict(r) for r in corrections],
         "appeals": [dict(r) for r in appeals],

@@ -1,5 +1,30 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/api";
+
+function scoreColor(score: number | null): string {
+  if (score === null) return "text-gray-400";
+  if (score >= 0.80) return "text-green-600";
+  if (score >= 0.70) return "text-yellow-600";
+  return "text-red-600";
+}
+
+function ScoreBar({ score }: { score: number | null }) {
+  if (score === null) return <p className="text-sm text-gray-400 italic">Insufficient data</p>;
+  const pct = Math.round(score * 100);
+  const color = score >= 0.80 ? "bg-green-500" : score >= 0.70 ? "bg-yellow-500" : "bg-red-500";
+  return (
+    <div>
+      <div className="flex items-baseline gap-2 mb-1">
+        <span className={`text-2xl font-bold tabular-nums ${scoreColor(score)}`}>{pct}</span>
+        <span className="text-xs text-gray-400">/ 100</span>
+      </div>
+      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
 
 export default async function JournalistPage({
   params,
@@ -14,14 +39,21 @@ export default async function JournalistPage({
   }
 
   const { pillar_scores: scores } = profile;
+  const narrative = scores?.score_narrative;
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-16">
       {/* 1. Header */}
-      <header className="mb-12">
+      <header className="mb-10">
+        <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 mb-6 inline-block">
+          ← Fourth Estate Index
+        </Link>
         <p className="text-sm text-gray-400 mb-2">{profile.primary_outlet}</p>
         <h1 className="text-4xl font-bold mb-1">{profile.full_name}</h1>
-        {profile.beat && <p className="text-gray-500 mb-4">{profile.beat}</p>}
+        {profile.beat && <p className="text-gray-500 mb-3">{profile.beat}</p>}
+        {profile.bio && (
+          <p className="text-gray-600 leading-relaxed mb-4">{profile.bio}</p>
+        )}
         <div className="text-xs text-gray-400 space-y-1">
           {profile.corpus_size && (
             <p>
@@ -38,36 +70,52 @@ export default async function JournalistPage({
 
       {/* 2. Scorecard */}
       <section className="mb-12">
-        <h2 className="text-xl font-semibold mb-4">FEI Score</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">FEI Score</h2>
+          <Link href="/methodology" className="text-sm text-blue-600 hover:underline">
+            How this is scored →
+          </Link>
+        </div>
         {scores ? (
           <div className="border border-gray-200 rounded-lg p-6">
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* Composite */}
+            {scores.composite_score !== null ? (
+              <div className="text-center mb-6 pb-6 border-b border-gray-100">
+                <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Composite Score</p>
+                <span className={`text-7xl font-bold tabular-nums ${scoreColor(scores.composite_score)}`}>
+                  {Math.round(scores.composite_score * 100)}
+                </span>
+                <p className="text-sm text-gray-400 mt-1">out of 100</p>
+                {narrative?.overall && (
+                  <p className="text-sm text-gray-500 mt-4 text-left leading-relaxed">{narrative.overall}</p>
+                )}
+              </div>
+            ) : (
+              <div className="text-center mb-8 pb-6 border-b border-gray-100">
+                <p className="text-sm text-gray-400 italic">
+                  Composite score pending — not all pillars have sufficient data yet.
+                </p>
+              </div>
+            )}
+
+            {/* Pillars */}
+            <div className="grid grid-cols-2 gap-8">
               {[
-                { label: "Seek Truth & Report It", value: scores.pillar_1_score },
-                { label: "Minimize Harm", value: scores.pillar_2_score },
-                { label: "Act Independently", value: scores.pillar_3_score },
-                { label: "Be Accountable", value: scores.pillar_4_score },
-              ].map(({ label, value }) => (
-                <div key={label} className="border border-gray-100 rounded p-3">
-                  <p className="text-xs text-gray-500 mb-1">{label}</p>
-                  {value !== null ? (
-                    <p className="text-2xl font-bold">{value.toFixed(1)}</p>
-                  ) : (
-                    <p className="text-sm text-gray-400 italic">Insufficient data</p>
+                { label: "Seek Truth & Report It", sublabel: "Pillar 1 · 30%", value: scores.pillar_1_score, narrativeKey: "pillar_1" },
+                { label: "Minimize Harm", sublabel: "Pillar 2 · 20%", value: scores.pillar_2_score, narrativeKey: "pillar_2" },
+                { label: "Act Independently", sublabel: "Pillar 3 · 30%", value: scores.pillar_3_score, narrativeKey: "pillar_3" },
+                { label: "Be Accountable", sublabel: "Pillar 4 · 20%", value: scores.pillar_4_score, narrativeKey: "pillar_4" },
+              ].map(({ label, sublabel, value, narrativeKey }) => (
+                <div key={label}>
+                  <p className="text-sm font-medium mb-0.5">{label}</p>
+                  <p className="text-xs text-gray-400 mb-2">{sublabel}</p>
+                  <ScoreBar score={value} />
+                  {narrative?.[narrativeKey] && (
+                    <p className="text-xs text-gray-500 mt-3 leading-relaxed">{narrative[narrativeKey]}</p>
                   )}
                 </div>
               ))}
             </div>
-            {scores.composite_score !== null ? (
-              <div className="text-center">
-                <p className="text-xs text-gray-400 mb-1">Composite Score</p>
-                <p className="text-5xl font-bold">{scores.composite_score.toFixed(1)}</p>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400 italic text-center">
-                Composite score pending — not all pillars have sufficient data yet.
-              </p>
-            )}
           </div>
         ) : (
           <div className="border border-gray-200 rounded-lg p-6 text-center text-gray-400">

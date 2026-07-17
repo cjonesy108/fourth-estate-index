@@ -20,6 +20,7 @@ export interface PillarScores {
   dimensions_scored: Record<string, boolean> | null;
   methodology_version: string;
   scored_at: string;
+  score_narrative: Record<string, string> | null;
 }
 
 export interface FECRecord {
@@ -64,6 +65,7 @@ export interface Citation {
 }
 
 export interface JournalistProfile extends JournalistSummary {
+  bio: string | null;
   pillar_scores: PillarScores | null;
   fec_records: FECRecord[];
   corrections: Correction[];

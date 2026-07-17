@@ -2,10 +2,24 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { JournalistSummary } from "@/lib/types";
 
+function scoreColor(score: number | null): string {
+  if (score === null) return "text-gray-400";
+  if (score >= 0.80) return "text-green-600";
+  if (score >= 0.70) return "text-yellow-600";
+  return "text-red-600";
+}
+
 export default async function Home() {
   let journalists: JournalistSummary[] = [];
   try {
     journalists = await api.journalists.list();
+    // Sort: scored journalists first (highest score first), unscored last
+    journalists.sort((a, b) => {
+      if (a.composite_score === null && b.composite_score === null) return 0;
+      if (a.composite_score === null) return 1;
+      if (b.composite_score === null) return -1;
+      return b.composite_score - a.composite_score;
+    });
   } catch {
     // API not yet running — show empty state
   }
@@ -63,12 +77,12 @@ export default async function Home() {
                 </div>
                 <div className="text-right">
                   {j.composite_score !== null ? (
-                    <span className="text-2xl font-bold tabular-nums">
-                      {j.composite_score.toFixed(1)}
+                    <span className={`text-2xl font-bold tabular-nums ${scoreColor(j.composite_score)}`}>
+                      {Math.round(j.composite_score * 100)}
                     </span>
                   ) : (
                     <span className="text-sm text-gray-400 italic">
-                      {j.data_status === "collecting" ? "Collecting data" : "Insufficient data"}
+                      Collecting data
                     </span>
                   )}
                 </div>

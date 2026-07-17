@@ -57,6 +57,7 @@ def _serialize_profile(profile: dict) -> dict:
         "slug": j["slug"],
         "primary_outlet": j.get("primary_outlet"),
         "beat": j.get("beat"),
+        "bio": j.get("bio"),
         "data_status": j.get("data_status"),
         "pillar_scores": s,
         "fec_records": [_serialize(r) for r in profile["fec_records"]],
