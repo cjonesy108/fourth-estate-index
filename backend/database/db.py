@@ -162,12 +162,14 @@ async def save_corrections(conn, journalist_id: str, publication_id: str, correc
                 (journalist_id, article_id, publication_id, correction_text,
                  correction_type, corrected_at, correction_url)
             VALUES ($1,$2,$3,$4,$5,$6,$7)
+            ON CONFLICT (journalist_id, correction_text, corrected_at) DO NOTHING
             """,
             journalist_id, article_db_id, publication_id,
             c.correction_text, c.correction_type,
             corrected_at, c.correction_url,
         )
-        inserted += 1
+        if result == "INSERT 0 1":
+            inserted += 1
     return inserted
 
 

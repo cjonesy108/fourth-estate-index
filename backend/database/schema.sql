@@ -72,7 +72,8 @@ CREATE TABLE corrections (
     corrected_at            TIMESTAMP,
     days_to_correction      INTEGER,
     correction_url          VARCHAR(1000),
-    ingested_at             TIMESTAMP DEFAULT NOW()
+    ingested_at             TIMESTAMP DEFAULT NOW(),
+    UNIQUE (journalist_id, correction_text, corrected_at)
 );
 
 -- ─────────────────────────────────────────────
