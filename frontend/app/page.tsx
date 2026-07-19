@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { JournalistSummary } from "@/lib/types";
 import JournalistTable from "./JournalistTable";
 
 export default async function Home() {
