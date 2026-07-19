@@ -1,13 +1,6 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { JournalistSummary } from "@/lib/types";
-
-function scoreColor(score: number | null): string {
-  if (score === null) return "text-gray-400";
-  if (score >= 0.80) return "text-green-600";
-  if (score >= 0.70) return "text-yellow-600";
-  return "text-red-600";
-}
+import JournalistTable from "./JournalistTable";
 
 export default async function Home() {
   let journalists: JournalistSummary[] = [];
@@ -62,33 +55,7 @@ export default async function Home() {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
-            {journalists.map((j) => (
-              <Link
-                key={j.id}
-                href={`/journalist/${j.slug}`}
-                className="flex items-center justify-between py-4 hover:bg-gray-50 px-2 rounded"
-              >
-                <div>
-                  <p className="font-medium">{j.full_name}</p>
-                  <p className="text-sm text-gray-500">
-                    {j.primary_outlet ?? "—"}{j.beat ? ` · ${j.beat}` : ""}
-                  </p>
-                </div>
-                <div className="text-right">
-                  {j.composite_score !== null ? (
-                    <span className={`text-2xl font-bold tabular-nums ${scoreColor(j.composite_score)}`}>
-                      {Math.round(j.composite_score * 100)}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-gray-400 italic">
-                      Collecting data
-                    </span>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
+          <JournalistTable journalists={journalists} />
         )}
       </section>
 

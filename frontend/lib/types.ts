@@ -8,6 +8,10 @@ export interface JournalistSummary {
   beat: string | null;
   data_status: DataStatus;
   composite_score: number | null;
+  pillar_1_score: number | null;
+  pillar_2_score: number | null;
+  pillar_3_score: number | null;
+  pillar_4_score: number | null;
   scored_at: string | null;
 }
 

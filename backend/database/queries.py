@@ -15,10 +15,12 @@ async def list_journalists(conn) -> list[dict]:
         """
         SELECT
             j.id, j.full_name, j.slug, j.primary_outlet, j.beat, j.data_status,
-            ps.composite_score, ps.scored_at
+            ps.composite_score, ps.pillar_1_score, ps.pillar_2_score,
+            ps.pillar_3_score, ps.pillar_4_score, ps.scored_at
         FROM journalists j
         LEFT JOIN LATERAL (
-            SELECT composite_score, scored_at
+            SELECT composite_score, pillar_1_score, pillar_2_score,
+                   pillar_3_score, pillar_4_score, scored_at
             FROM pillar_scores
             WHERE journalist_id = j.id
             ORDER BY scored_at DESC

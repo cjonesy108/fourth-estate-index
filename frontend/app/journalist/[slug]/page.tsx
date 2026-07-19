@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Metadata } from "next";
 import { api } from "@/lib/api";
+import ShareButton from "./ShareButton";
 
 function scoreColor(score: number | null): string {
   if (score === null) return "text-gray-400";
@@ -24,6 +26,26 @@ function ScoreBar({ score }: { score: number | null }) {
       </div>
     </div>
   );
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  try {
+    const profile = await api.journalists.get(params.slug);
+    const score = profile.pillar_scores?.composite_score;
+    const scoreStr = score !== null && score !== undefined
+      ? ` · FEI Score: ${Math.round(score * 100)}/100`
+      : "";
+    return {
+      title: `${profile.full_name} | Fourth Estate Index`,
+      description: `Journalism standards score for ${profile.full_name} (${profile.primary_outlet})${scoreStr}`,
+    };
+  } catch {
+    return { title: "Fourth Estate Index" };
+  }
 }
 
 export default async function JournalistPage({
@@ -54,6 +76,9 @@ export default async function JournalistPage({
         {profile.bio && (
           <p className="text-gray-600 leading-relaxed mb-4">{profile.bio}</p>
         )}
+        <div className="mb-4">
+          <ShareButton slug={params.slug} />
+        </div>
         <div className="text-xs text-gray-400 space-y-1">
           {profile.corpus_size && (
             <p>
