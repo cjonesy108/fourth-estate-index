@@ -68,6 +68,21 @@ export interface Citation {
   article_headline: string | null;
 }
 
+export interface OutletSummary {
+  name: string;
+  slug: string;
+  journalist_count: number;
+  avg_composite: number | null;
+  avg_pillar_1: number | null;
+  avg_pillar_2: number | null;
+  avg_pillar_3: number | null;
+  avg_pillar_4: number | null;
+}
+
+export interface OutletProfile extends OutletSummary {
+  journalists: JournalistSummary[];
+}
+
 export interface JournalistProfile extends JournalistSummary {
   bio: string | null;
   pillar_scores: PillarScores | null;

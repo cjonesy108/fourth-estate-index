@@ -4,7 +4,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api.routes import journalists, methodology
+from backend.api.routes import journalists, methodology, outlets
 
 app = FastAPI(
     title="Fourth Estate Index API",
@@ -24,6 +24,7 @@ app.add_middleware(
 )
 
 app.include_router(journalists.router, prefix="/api/journalists", tags=["journalists"])
+app.include_router(outlets.router,    prefix="/api/outlets",     tags=["outlets"])
 app.include_router(methodology.router, prefix="/api/methodology", tags=["methodology"])
 
 

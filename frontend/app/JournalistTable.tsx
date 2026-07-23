@@ -30,7 +30,13 @@ function ScoreCell({ score }: { score: number | null }) {
   );
 }
 
-export default function JournalistTable({ journalists }: { journalists: JournalistSummary[] }) {
+export default function JournalistTable({
+  journalists,
+  hideOutletFilter = false,
+}: {
+  journalists: JournalistSummary[];
+  hideOutletFilter?: boolean;
+}) {
   const outlets = useMemo(() => {
     const set = new Set(journalists.map(j => j.primary_outlet).filter(Boolean) as string[]);
     return Array.from(set).sort();
@@ -64,31 +70,44 @@ export default function JournalistTable({ journalists }: { journalists: Journali
   return (
     <div>
       {/* Outlet filter pills */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        <button
-          onClick={() => setOutlet(null)}
-          className={`px-3 py-1 rounded-full text-sm transition-colors ${
-            outlet === null
-              ? "bg-gray-900 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          }`}
-        >
-          All outlets
-        </button>
-        {outlets.map(o => (
+      {!hideOutletFilter && (
+        <div className="flex flex-wrap gap-2 mb-5">
           <button
-            key={o}
-            onClick={() => setOutlet(o === outlet ? null : o)}
+            onClick={() => setOutlet(null)}
             className={`px-3 py-1 rounded-full text-sm transition-colors ${
-              outlet === o
+              outlet === null
                 ? "bg-gray-900 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            {o}
+            All outlets
           </button>
-        ))}
-      </div>
+          {outlets.map(o => {
+            const slug = o.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+            return (
+              <div key={o} className="flex items-center gap-1">
+                <button
+                  onClick={() => setOutlet(o === outlet ? null : o)}
+                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                    outlet === o
+                      ? "bg-gray-900 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {o}
+                </button>
+                <Link
+                  href={`/outlet/${slug}`}
+                  className="text-xs text-gray-300 hover:text-blue-500 transition-colors"
+                  title={`View ${o} outlet page`}
+                >
+                  →
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Table */}
       <div className="overflow-x-auto">

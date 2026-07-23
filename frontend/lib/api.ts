@@ -1,4 +1,4 @@
-import { Citation, JournalistProfile, JournalistSummary } from "./types";
+import { Citation, JournalistProfile, JournalistSummary, OutletProfile, OutletSummary } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -19,6 +19,10 @@ export const api = {
       const qs = dimension ? `?dimension=${dimension}` : "";
       return get<Citation[]>(`/api/journalists/${slug}/citations${qs}`);
     },
+  },
+  outlets: {
+    list: () => get<OutletSummary[]>("/api/outlets"),
+    get: (slug: string) => get<OutletProfile>(`/api/outlets/${slug}`),
   },
   methodology: {
     get: () => get<Record<string, unknown>>("/api/methodology"),
