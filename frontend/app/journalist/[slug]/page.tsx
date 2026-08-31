@@ -2,6 +2,13 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
 import { api } from "@/lib/api";
+import { JournalistProfile } from "@/lib/types";
+import {
+  directoryProfile,
+  getDirectoryJournalist,
+  listDirectoryJournalists,
+  outletName,
+} from "@/lib/directory";
 import ShareButton from "./ShareButton";
 
 function scoreColor(score: number | null): string {
@@ -28,24 +35,34 @@ function ScoreBar({ score }: { score: number | null }) {
   );
 }
 
+export function generateStaticParams() {
+  return listDirectoryJournalists().map((j) => ({ slug: j.slug }));
+}
+
+async function loadProfile(slug: string): Promise<JournalistProfile | null> {
+  try {
+    return await api.journalists.get(slug);
+  } catch {
+    return directoryProfile(slug);
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  try {
-    const profile = await api.journalists.get(params.slug);
-    const score = profile.pillar_scores?.composite_score;
-    const scoreStr = score !== null && score !== undefined
+  const profile = await loadProfile(params.slug);
+  if (!profile) return { title: "Fourth Estate Index" };
+  const score = profile.pillar_scores?.composite_score ?? profile.composite_score;
+  const scoreStr =
+    score !== null && score !== undefined
       ? ` · FEI Score: ${Math.round(score * 100)}/100`
       : "";
-    return {
-      title: `${profile.full_name} | Fourth Estate Index`,
-      description: `Journalism standards score for ${profile.full_name} (${profile.primary_outlet})${scoreStr}`,
-    };
-  } catch {
-    return { title: "Fourth Estate Index" };
-  }
+  return {
+    title: `${profile.full_name} | Fourth Estate Index`,
+    description: `Journalism standards score for ${profile.full_name} (${profile.primary_outlet})${scoreStr}`,
+  };
 }
 
 export default async function JournalistPage({
@@ -53,39 +70,59 @@ export default async function JournalistPage({
 }: {
   params: { slug: string };
 }) {
-  let profile;
-  try {
-    profile = await api.journalists.get(params.slug);
-  } catch {
-    notFound();
-  }
+  const profile = await loadProfile(params.slug);
+  if (!profile) notFound();
 
+  const seeded = getDirectoryJournalist(params.slug);
   const { pillar_scores: scores } = profile;
   const narrative = scores?.score_narrative;
+  const outletSlug = seeded?.primary_outlet;
+  const outletLabel = profile.primary_outlet || (outletSlug ? outletName(outletSlug) : null);
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-16">
-      {/* 1. Header */}
       <header className="mb-10">
         <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 mb-6 inline-block">
           ← Fourth Estate Index
         </Link>
-        <p className="text-sm text-gray-400 mb-2">{profile.primary_outlet}</p>
+        {outletLabel && outletSlug ? (
+          <p className="text-sm text-gray-400 mb-2">
+            <Link href={`/outlet/${outletSlug}`} className="hover:text-gray-600">
+              {outletLabel}
+            </Link>
+          </p>
+        ) : (
+          <p className="text-sm text-gray-400 mb-2">{outletLabel}</p>
+        )}
         <h1 className="text-4xl font-bold mb-1">{profile.full_name}</h1>
-        {profile.beat && <p className="text-gray-500 mb-3">{profile.beat}</p>}
+        {(profile.beat || seeded?.beat) && (
+          <p className="text-gray-500 mb-3">{profile.beat || seeded?.beat}</p>
+        )}
         {profile.bio && (
           <p className="text-gray-600 leading-relaxed mb-4">{profile.bio}</p>
         )}
-        <div className="mb-4">
+        <div className="flex flex-wrap items-center gap-4 mb-4">
           <ShareButton slug={params.slug} />
+          {seeded?.author_url && (
+            <a
+              href={seeded.author_url}
+              className="text-sm text-blue-600 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Author page ↗
+            </a>
+          )}
         </div>
         <div className="text-xs text-gray-400 space-y-1">
-          {profile.corpus_size && (
+          {profile.corpus_size ? (
             <p>
               {profile.corpus_size} articles analyzed ·{" "}
               {profile.corpus_start?.slice(0, 10)} to{" "}
               {profile.corpus_end?.slice(0, 10)}
             </p>
+          ) : (
+            <p>Listed in the directory. Full-text corpus still collecting.</p>
           )}
           {profile.methodology_version && (
             <p>Methodology v{profile.methodology_version}</p>
@@ -93,7 +130,6 @@ export default async function JournalistPage({
         </div>
       </header>
 
-      {/* 2. Scorecard */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">FEI Score</h2>
@@ -103,7 +139,6 @@ export default async function JournalistPage({
         </div>
         {scores ? (
           <div className="border border-gray-200 rounded-lg p-6">
-            {/* Composite */}
             {scores.composite_score !== null ? (
               <div className="text-center mb-6 pb-6 border-b border-gray-100">
                 <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Composite Score</p>
@@ -122,8 +157,6 @@ export default async function JournalistPage({
                 </p>
               </div>
             )}
-
-            {/* Pillars */}
             <div className="grid grid-cols-2 gap-8">
               {[
                 { label: "Seek Truth & Report It", sublabel: "Pillar 1 · 30%", value: scores.pillar_1_score, narrativeKey: "pillar_1" },
@@ -146,13 +179,14 @@ export default async function JournalistPage({
           <div className="border border-gray-200 rounded-lg p-6 text-center text-gray-400">
             <p className="font-medium mb-1">Data collection in progress</p>
             <p className="text-sm">
-              No score is published until minimum data thresholds are met.
+              This journalist is in the public directory. No score is published
+              until minimum data thresholds are met — and until we have licensed
+              or openly published full text for the dimensions that need it.
             </p>
           </div>
         )}
       </section>
 
-      {/* 3. Financial Disclosures */}
       <section className="mb-12">
         <h2 className="text-xl font-semibold mb-4">Financial Disclosures</h2>
         {profile.fec_records.length > 0 ? (
@@ -195,7 +229,6 @@ export default async function JournalistPage({
         )}
       </section>
 
-      {/* 4. Corrections Record */}
       <section className="mb-12">
         <h2 className="text-xl font-semibold mb-4">Corrections Record</h2>
         {profile.corrections.length > 0 ? (
@@ -205,24 +238,13 @@ export default async function JournalistPage({
                 <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
                   {c.corrected_at && <span>{c.corrected_at.slice(0, 10)}</span>}
                   {c.correction_type && (
-                    <span className="border border-gray-200 rounded px-1">
-                      {c.correction_type}
-                    </span>
+                    <span className="border border-gray-200 rounded px-1">{c.correction_type}</span>
                   )}
-                  {c.days_to_correction && (
-                    <span>{c.days_to_correction}d to correction</span>
-                  )}
+                  {c.days_to_correction && <span>{c.days_to_correction}d to correction</span>}
                 </div>
                 <p className="text-sm">{c.correction_text}</p>
                 {c.correction_url && (
-                  <a
-                    href={c.correction_url}
-                    className="text-xs text-blue-600 underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Source ↗
-                  </a>
+                  <a href={c.correction_url} className="text-xs text-blue-600 underline" target="_blank" rel="noopener noreferrer">Source ↗</a>
                 )}
               </div>
             ))}
@@ -231,29 +253,6 @@ export default async function JournalistPage({
           <p className="text-sm text-gray-400">No corrections on record.</p>
         )}
       </section>
-
-      {/* 5. Context & Appeals */}
-      {profile.appeals.filter((a) => a.published).length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-xl font-semibold mb-4">Context & Appeals</h2>
-          <div className="space-y-4">
-            {profile.appeals
-              .filter((a) => a.published)
-              .map((a) => (
-                <div key={a.id} className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-400 mb-2">
-                    Submitted {a.submitted_at.slice(0, 10)}
-                    {a.outcome && ` · Outcome: ${a.outcome}`}
-                  </div>
-                  <p className="text-sm">{a.submission_text}</p>
-                  {a.outcome_notes && (
-                    <p className="text-xs text-gray-500 mt-2">{a.outcome_notes}</p>
-                  )}
-                </div>
-              ))}
-          </div>
-        </section>
-      )}
     </main>
   );
 }
