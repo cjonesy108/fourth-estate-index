@@ -83,6 +83,12 @@ export interface ControlSnapshot {
   top3Economic: number | null;
 }
 
+export interface PowerLink {
+  entity: OwnershipEntity;
+  via: "voting" | "economic" | "office";
+  role: string;
+}
+
 const people = peopleFile as { affiliations: Affiliation[]; entities: OwnershipEntity[] };
 
 const data: OwnershipGraph = {
@@ -98,7 +104,7 @@ const data: OwnershipGraph = {
 const contributions = {
   as_of: (contributionsFile as { as_of: string }).as_of,
   rule:
-    "Firm PAC, controller, and named officer are three different checkbooks. BlackRock PAC is not Larry Fink. Fink is not CNN. Amazon PAC is not Bezos and not the Post.",
+    "Firm PAC, controller, and named officer are three different checkbooks. Opening CNN does not open Fink. Clicking through BlackRock does.",
   records: [
     ...(contributionsFile as { records: ContributionRecord[] }).records,
     ...(contributionAdds as { records: ContributionRecord[] }).records,
@@ -129,6 +135,7 @@ export function orgsOf(personSlug: string): { org: OwnershipEntity; role: string
     .filter((row) => row.org);
 }
 
+/** FEC rows for this entity, its own officers, and its control-chain parent — not officers of 13F holders. */
 export function contributionsFor(slug: string): ContributionRecord[] {
   const slugs = new Set([slug]);
   for (const step of controlChain(slug)) slugs.add(step.entity.slug);
@@ -215,6 +222,47 @@ export function descendantOutlets(slug: string): OwnershipEntity[] {
     }
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** People and firms you can open from here. Does not attach their FEC to this page. */
+export function clickThrough(slug: string): PowerLink[] {
+  const links: PowerLink[] = [];
+  const seen = new Set<string>([slug]);
+  const add = (entity: OwnershipEntity | undefined, via: PowerLink["via"], role: string) => {
+    if (!entity || seen.has(entity.slug)) return;
+    seen.add(entity.slug);
+    links.push({ entity, via, role });
+  };
+
+  for (const step of controlChain(slug)) {
+    if (["family", "individual", "trust"].includes(step.entity.type) && step.entity.slug !== slug) {
+      add(step.entity, "voting", "voting / beneficial control");
+      for (const { person, role } of officersOf(step.entity.slug)) add(person, "voting", role);
+    }
+  }
+
+  const focus =
+    publicParent(slug) ??
+    (getEntity(slug)?.type === "public_issuer" || getEntity(slug)?.type === "institution"
+      ? getEntity(slug)
+      : undefined);
+
+  if (focus) {
+    for (const { person, role } of officersOf(focus.slug)) add(person, "office", `${role}, ${focus.name}`);
+    for (const h of economicHolders(focus.slug)) {
+      add(
+        h.entity,
+        "economic",
+        `${formatPct(h.edge.pct_economic)} of ${focus.ticker ?? focus.name}`
+      );
+      for (const { person, role } of officersOf(h.entity.slug)) {
+        add(person, "office", `${role}, ${h.entity.name}`);
+      }
+    }
+  }
+
+  for (const { person, role } of officersOf(slug)) add(person, "office", role);
+  return links;
 }
 
 export function controlSnapshot(outletSlug: string): ControlSnapshot {
@@ -316,4 +364,10 @@ export const LAYER_LABEL: Record<ContributionLayer, string> = {
   controller: "Controller / family",
   parent_pac: "Entity PAC / cycle",
   individual: "Named officer (personal)",
+};
+
+export const VIA_LABEL: Record<PowerLink["via"], string> = {
+  voting: "Voting control",
+  economic: "Economic stake",
+  office: "Office",
 };
