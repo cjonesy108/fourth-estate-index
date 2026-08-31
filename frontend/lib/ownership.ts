@@ -1,6 +1,8 @@
 import graph from "@/data/ownership.json";
 import additions from "@/data/ownership-additions.json";
 import contributionsFile from "@/data/contributions.json";
+import contributionAdds from "@/data/contributions-additions.json";
+import peopleFile from "@/data/people.json";
 
 export type EntityType =
   | "outlet"
@@ -52,7 +54,7 @@ export interface OwnershipGraph {
   edges: OwnershipEdge[];
 }
 
-export type ContributionLayer = "controller" | "parent_pac";
+export type ContributionLayer = "controller" | "parent_pac" | "individual";
 
 export interface ContributionRecord {
   entity: string;
@@ -66,16 +68,41 @@ export interface ContributionRecord {
   source_label: string;
 }
 
+export interface Affiliation {
+  person: string;
+  org: string;
+  role: string;
+}
+
+export interface ControlSnapshot {
+  kind: "controller" | "institutional" | "closed";
+  label: string;
+  detail: string;
+  href?: string;
+  topHolders: { entity: OwnershipEntity; pct: number | null }[];
+  top3Economic: number | null;
+}
+
+const people = peopleFile as { affiliations: Affiliation[]; entities: OwnershipEntity[] };
+
 const data: OwnershipGraph = {
   ...(graph as OwnershipGraph),
-  entities: [...(graph as OwnershipGraph).entities, ...(additions.entities as OwnershipEntity[])],
+  entities: [
+    ...(graph as OwnershipGraph).entities,
+    ...(additions.entities as OwnershipEntity[]),
+    ...people.entities,
+  ],
   edges: [...(graph as OwnershipGraph).edges, ...(additions.edges as OwnershipEdge[])],
 };
 
-const contributions = contributionsFile as {
-  as_of: string;
-  rule: string;
-  records: ContributionRecord[];
+const contributions = {
+  as_of: (contributionsFile as { as_of: string }).as_of,
+  rule:
+    "Firm PAC, controller, and named officer are three different checkbooks. BlackRock PAC is not Larry Fink. Fink is not CNN. Amazon PAC is not Bezos and not the Post.",
+  records: [
+    ...(contributionsFile as { records: ContributionRecord[] }).records,
+    ...(contributionAdds as { records: ContributionRecord[] }).records,
+  ],
 };
 
 const entitiesBySlug = new Map(data.entities.map((e) => [e.slug, e]));
@@ -88,11 +115,27 @@ export function getContributionsMeta() {
   return { as_of: contributions.as_of, rule: contributions.rule };
 }
 
+export function officersOf(orgSlug: string): { person: OwnershipEntity; role: string }[] {
+  return people.affiliations
+    .filter((a) => a.org === orgSlug)
+    .map((a) => ({ person: getEntity(a.person)!, role: a.role }))
+    .filter((row) => row.person);
+}
+
+export function orgsOf(personSlug: string): { org: OwnershipEntity; role: string }[] {
+  return people.affiliations
+    .filter((a) => a.person === personSlug)
+    .map((a) => ({ org: getEntity(a.org)!, role: a.role }))
+    .filter((row) => row.org);
+}
+
 export function contributionsFor(slug: string): ContributionRecord[] {
   const slugs = new Set([slug]);
   for (const step of controlChain(slug)) slugs.add(step.entity.slug);
   const parent = publicParent(slug);
   if (parent) slugs.add(parent.slug);
+  for (const { person } of officersOf(slug)) slugs.add(person.slug);
+  for (const { org } of orgsOf(slug)) slugs.add(org.slug);
   return contributions.records.filter((r) => slugs.has(r.entity));
 }
 
@@ -119,14 +162,6 @@ export function listControllers(): OwnershipEntity[] {
   return data.entities.filter((e) => slugs.has(e.slug)).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export function edgesFrom(slug: string): OwnershipEdge[] {
-  return data.edges.filter((e) => e.holder === slug);
-}
-
-export function edgesTo(slug: string): OwnershipEdge[] {
-  return data.edges.filter((e) => e.asset === slug);
-}
-
 const CONTROL_EDGES: EdgeType[] = ["operates", "wholly_owns", "voting_control", "beneficial_owner"];
 
 export function controlChain(outletSlug: string): { entity: OwnershipEntity; via: OwnershipEdge | null }[] {
@@ -134,7 +169,6 @@ export function controlChain(outletSlug: string): { entity: OwnershipEntity; via
   const start = getEntity(outletSlug);
   if (!start) return chain;
   chain.push({ entity: start, via: null });
-
   const seen = new Set<string>([outletSlug]);
   let current = outletSlug;
   for (let i = 0; i < 8; i++) {
@@ -152,7 +186,9 @@ export function controlChain(outletSlug: string): { entity: OwnershipEntity; via
 }
 
 export function publicParent(outletSlug: string): OwnershipEntity | undefined {
-  return controlChain(outletSlug).map((c) => c.entity).find((e) => e.type === "public_issuer");
+  return controlChain(outletSlug)
+    .map((c) => c.entity)
+    .find((e) => e.type === "public_issuer");
 }
 
 export function economicHolders(entitySlug: string): { entity: OwnershipEntity; edge: OwnershipEdge }[] {
@@ -179,6 +215,59 @@ export function descendantOutlets(slug: string): OwnershipEntity[] {
     }
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function controlSnapshot(outletSlug: string): ControlSnapshot {
+  const chain = controlChain(outletSlug);
+  const controllerStep = [...chain].reverse().find((c) =>
+    ["family", "individual", "trust"].includes(c.entity.type)
+  );
+  const parent = publicParent(outletSlug);
+  const holders = parent ? economicHolders(parent.slug) : [];
+  const top = holders.slice(0, 3).map((h) => ({ entity: h.entity, pct: h.edge.pct_economic }));
+  const top3Economic =
+    top.length && top.every((t) => t.pct != null)
+      ? top.reduce((s, t) => s + (t.pct ?? 0), 0)
+      : null;
+
+  if (controllerStep) {
+    const via = controllerStep.via;
+    const vote = via?.pct_voting != null ? `${formatPct(via.pct_voting)} voting` : "voting control";
+    return {
+      kind: "controller",
+      label: controllerStep.entity.name,
+      detail: vote,
+      href: `/ownership/${controllerStep.entity.slug}`,
+      topHolders: top,
+      top3Economic,
+    };
+  }
+
+  if (parent) {
+    const names = top
+      .map((t) => `${t.entity.name}${t.pct != null ? ` ${formatPct(t.pct)}` : ""}`)
+      .join(" · ");
+    return {
+      kind: "institutional",
+      label: `1-share-1-vote (${parent.ticker ?? parent.name})`,
+      detail: names
+        ? `Top holders ${names}${top3Economic != null ? ` · top 3 = ${formatPct(top3Economic)}` : ""}`
+        : "No 13F rows in seed yet — widely held, no dual-class controller",
+      href: `/ownership/${parent.slug}`,
+      topHolders: top,
+      top3Economic,
+    };
+  }
+
+  const tail = chain[chain.length - 1]?.entity;
+  return {
+    kind: "closed",
+    label: tail && tail.slug !== outletSlug ? tail.name : "Private / nonprofit",
+    detail: tail?.type === "trust" ? "Trust — no residual shareholders" : "No public float",
+    href: tail && tail.slug !== outletSlug ? `/ownership/${tail.slug}` : undefined,
+    topHolders: [],
+    top3Economic: 100,
+  };
 }
 
 export interface HolderPosition {
@@ -225,5 +314,6 @@ export const EDGE_LABEL: Record<EdgeType, string> = {
 
 export const LAYER_LABEL: Record<ContributionLayer, string> = {
   controller: "Controller / family",
-  parent_pac: "Parent PAC / company cycle",
+  parent_pac: "Entity PAC / cycle",
+  individual: "Named officer (personal)",
 };

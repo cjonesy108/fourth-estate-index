@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import {
   LAYER_LABEL,
   allContributions,
-  controlChain,
+  controlSnapshot,
   formatPct,
   getContributionsMeta,
   getEntity,
@@ -12,25 +12,15 @@ import {
   listControllers,
   listInstitutions,
   listOutlets,
+  officersOf,
   publicParent,
 } from "@/lib/ownership";
 
 export const metadata: Metadata = {
   title: "Who owns the media — Fourth Estate Index",
   description:
-    "Voting control, economic stakes, and controller political giving across major news outlets.",
+    "Voting control, institutional concentration, and entity vs officer political giving.",
 };
-
-function ControllerLabel({ slug }: { slug: string }) {
-  const chain = controlChain(slug);
-  const controller = [...chain].reverse().find((c) =>
-    ["family", "individual", "trust"].includes(c.entity.type)
-  );
-  const parent = publicParent(slug);
-  if (controller) return <>{controller.entity.name}</>;
-  if (parent) return <>Dispersed ({parent.ticker})</>;
-  return <>—</>;
-}
 
 export default function OwnershipIndex() {
   const graph = getGraph();
@@ -46,49 +36,62 @@ export default function OwnershipIndex() {
         <p className="text-sm text-gray-400 mb-3">Fourth Estate Index</p>
         <h1 className="text-4xl font-bold tracking-tight mb-4">Who owns the media</h1>
         <p className="text-lg text-gray-600 leading-relaxed mb-4">
-          Two facts, kept apart on purpose. <strong>Voting control</strong> is
-          who can fire the editor. <strong>Economic stake</strong> is who has
-          capital sitting in the parent company — usually index funds, usually
-          without a board seat.
+          Where there is a controller, we name them and the voting share.
+          Where there is not, we show the <strong>1-share-1-vote parent</strong> and the
+          top institutional holders — not the word “dispersed.”
         </p>
         <p className="text-gray-600 leading-relaxed">
-          Political money is a third column, attached only to the entity that
-          wrote the check — a controller or a parent PAC, never an index fund
-          and never “CNN donated.”
+          Political money is split the same way: firm PAC vs named officer.
+          BlackRock PAC is not Larry Fink. Fink is not CNN.
         </p>
       </header>
 
       <section className="mb-16">
         <h2 className="text-xl font-semibold mb-4">Outlets</h2>
-        <p className="text-sm text-gray-500 mb-6">
-          {outlets.length} outlets in the seed. Control path is the default.
-        </p>
+        <p className="text-sm text-gray-500 mb-6">{outlets.length} outlets. Concentration is top 13F holders of the public parent.</p>
         <div className="overflow-x-auto border border-gray-100 rounded-lg">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100">
                 <th className="px-4 py-3 font-medium">Outlet</th>
-                <th className="px-4 py-3 font-medium">Voting control</th>
-                <th className="px-4 py-3 font-medium">Public parent</th>
+                <th className="px-4 py-3 font-medium">Control</th>
+                <th className="px-4 py-3 font-medium">Concentration</th>
               </tr>
             </thead>
             <tbody>
               {outlets.map((o) => {
+                const snap = controlSnapshot(o.slug);
                 const parent = publicParent(o.slug);
                 return (
-                  <tr key={o.slug} className="border-b border-gray-50 last:border-0">
+                  <tr key={o.slug} className="border-b border-gray-50 last:border-0 align-top">
                     <td className="px-4 py-3">
                       <Link href={`/ownership/${o.slug}`} className="font-medium hover:underline">{o.name}</Link>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600"><ControllerLabel slug={o.slug} /></td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {parent ? (
-                        <Link href={`/ownership/${parent.slug}`} className="hover:underline">
-                          {parent.name}{parent.ticker ? ` (${parent.ticker})` : ""}
-                        </Link>
-                      ) : (
-                        "Private / trust / nonprofit"
+                      {parent && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          <Link href={`/ownership/${parent.slug}`} className="hover:underline">
+                            {parent.ticker ?? parent.name}
+                          </Link>
+                        </div>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {snap.href ? (
+                        <Link href={snap.href} className="hover:underline">{snap.label}</Link>
+                      ) : (
+                        snap.label
+                      )}
+                      {snap.kind === "controller" && (
+                        <div className="text-xs text-gray-400 mt-1">{snap.detail}</div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs leading-relaxed">
+                      {snap.kind === "institutional"
+                        ? snap.detail
+                        : snap.kind === "closed"
+                        ? snap.detail
+                        : snap.topHolders.length
+                        ? snap.topHolders.map((h) => `${h.entity.name} ${formatPct(h.pct)}`).join(" · ")
+                        : "—"}
                     </td>
                   </tr>
                 );
@@ -100,18 +103,28 @@ export default function OwnershipIndex() {
 
       <section className="mb-16">
         <h2 className="text-xl font-semibold mb-4">Institutional economic concentration</h2>
-        <p className="text-sm text-gray-500 mb-6">
-          Same holders, many issuers. No recursion into who owns the funds. Economic data as of {graph.as_of_economic}.
-        </p>
+        <p className="text-sm text-gray-500 mb-6">Holdings plus the named officer, when we have one. Economic data as of {graph.as_of_economic}.</p>
         <div className="space-y-8">
           {institutions.map((inst) => {
             const holdings = institutionHoldings(inst.slug);
+            const officers = officersOf(inst.slug);
             return (
               <div key={inst.slug} className="border border-gray-100 rounded-lg p-5">
-                <div className="flex items-baseline justify-between gap-4 mb-4">
+                <div className="flex items-baseline justify-between gap-4 mb-2">
                   <Link href={`/ownership/${inst.slug}`} className="text-lg font-semibold hover:underline">{inst.name}</Link>
-                  <span className="text-xs text-gray-400">{holdings.length} media issuer{holdings.length === 1 ? "" : "s"} in seed</span>
+                  <span className="text-xs text-gray-400">{holdings.length} issuer{holdings.length === 1 ? "" : "s"}</span>
                 </div>
+                {officers.length > 0 && (
+                  <p className="text-sm text-gray-500 mb-3">
+                    {officers.map((off, i) => (
+                      <span key={off.person.slug}>
+                        {i > 0 && ", "}
+                        <Link href={`/ownership/${off.person.slug}`} className="hover:underline">{off.person.name}</Link>
+                        <span className="text-gray-400"> · {off.role}</span>
+                      </span>
+                    ))}
+                  </p>
+                )}
                 {holdings.length === 0 ? (
                   <p className="text-sm text-gray-400">No 13F rows in this seed yet.</p>
                 ) : (
@@ -123,7 +136,7 @@ export default function OwnershipIndex() {
                           {h.issuer.name}{h.issuer.ticker ? ` (${h.issuer.ticker})` : ""}
                         </Link>
                         {h.outlets.length > 0 && (
-                          <span className="text-gray-400">— {h.outlets.map((o) => o.name).join(", ")}</span>
+                          <span className="text-gray-400">— {h.outlets.map((x) => x.name).join(", ")}</span>
                         )}
                       </li>
                     ))}
@@ -137,7 +150,6 @@ export default function OwnershipIndex() {
 
       <section className="mb-16">
         <h2 className="text-xl font-semibold mb-4">Controllers</h2>
-        <p className="text-sm text-gray-500 mb-6">Families, individuals, and trusts with voting or beneficial control. Not index funds.</p>
         <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
           {controllers.map((c) => (
             <li key={c.slug} className="px-4 py-3">
@@ -155,7 +167,7 @@ export default function OwnershipIndex() {
           {giving.map((g) => {
             const ent = getEntity(g.entity);
             return (
-              <li key={`${g.entity}-${g.cycle}`} className="border border-gray-100 rounded-lg p-4">
+              <li key={`${g.entity}-${g.layer}-${g.cycle}`} className="border border-gray-100 rounded-lg p-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
                   <Link href={`/ownership/${g.entity}`} className="font-medium hover:underline">{ent?.name ?? g.entity}</Link>
                   <span className="text-xs text-gray-400">
