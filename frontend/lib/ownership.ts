@@ -1,5 +1,6 @@
 import graph from "@/data/ownership.json";
 import additions from "@/data/ownership-additions.json";
+import groups from "@/data/ownership-groups.json";
 import contributionsFile from "@/data/contributions.json";
 import contributionAdds from "@/data/contributions-additions.json";
 import peopleFile from "@/data/people.json";
@@ -89,16 +90,35 @@ export interface PowerLink {
   role: string;
 }
 
-const people = peopleFile as { affiliations: Affiliation[]; entities: OwnershipEntity[] };
+const groupsFile = groups as {
+  entities: OwnershipEntity[];
+  edges: OwnershipEdge[];
+  affiliations: Affiliation[];
+};
+
+const people = {
+  affiliations: [
+    ...(peopleFile as { affiliations: Affiliation[] }).affiliations,
+    ...groupsFile.affiliations,
+  ],
+  entities: [
+    ...(peopleFile as { entities: OwnershipEntity[] }).entities,
+  ],
+};
 
 const data: OwnershipGraph = {
   ...(graph as OwnershipGraph),
   entities: [
     ...(graph as OwnershipGraph).entities,
     ...(additions.entities as OwnershipEntity[]),
+    ...groupsFile.entities,
     ...people.entities,
   ],
-  edges: [...(graph as OwnershipGraph).edges, ...(additions.edges as OwnershipEdge[])],
+  edges: [
+    ...(graph as OwnershipGraph).edges,
+    ...(additions.edges as OwnershipEdge[]),
+    ...groupsFile.edges,
+  ],
 };
 
 const contributions = {
@@ -135,7 +155,6 @@ export function orgsOf(personSlug: string): { org: OwnershipEntity; role: string
     .filter((row) => row.org);
 }
 
-/** FEC rows for this entity, its own officers, and its control-chain parent — not officers of 13F holders. */
 export function contributionsFor(slug: string): ContributionRecord[] {
   const slugs = new Set([slug]);
   for (const step of controlChain(slug)) slugs.add(step.entity.slug);
@@ -224,7 +243,6 @@ export function descendantOutlets(slug: string): OwnershipEntity[] {
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** People and firms you can open from here. Does not attach their FEC to this page. */
 export function clickThrough(slug: string): PowerLink[] {
   const links: PowerLink[] = [];
   const seen = new Set<string>([slug]);
@@ -250,11 +268,7 @@ export function clickThrough(slug: string): PowerLink[] {
   if (focus) {
     for (const { person, role } of officersOf(focus.slug)) add(person, "office", `${role}, ${focus.name}`);
     for (const h of economicHolders(focus.slug)) {
-      add(
-        h.entity,
-        "economic",
-        `${formatPct(h.edge.pct_economic)} of ${focus.ticker ?? focus.name}`
-      );
+      add(h.entity, "economic", `${formatPct(h.edge.pct_economic)} of ${focus.ticker ?? focus.name}`);
       for (const { person, role } of officersOf(h.entity.slug)) {
         add(person, "office", `${role}, ${h.entity.name}`);
       }
