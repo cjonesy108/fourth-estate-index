@@ -1,15 +1,13 @@
+@import "../styles/tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import "../styles/tokens.css";
 
 @layer base {
   html,
   body {
     background: var(--surface-page);
     color: var(--text-body);
-  }
-  a {
-    color: inherit;
   }
 }

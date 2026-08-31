@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { JournalistSummary } from "@/lib/types";
 import { getDirectoryJournalist } from "@/lib/directory";
+import { gradeColor, letterGrade, scoreToPct } from "@/lib/score";
 
 type SortKey = "composite_score" | "pillar_1_score" | "pillar_2_score" | "pillar_3_score" | "pillar_4_score";
 
@@ -15,31 +16,19 @@ const COLUMNS: { key: SortKey; label: string; short: string }[] = [
   { key: "pillar_4_score",   label: "Be Accountable",    short: "P4" },
 ];
 
-function scoreColor(score: number | null) {
-  if (score === null) return "text-gray-300";
-  if (score >= 0.8) return "text-emerald-600";
-  if (score >= 0.7) return "text-amber-500";
-  return "text-red-500";
-}
-
 function ScoreCell({ score }: { score: number | null }) {
-  if (score === null) return <span className="text-xs text-gray-300 italic">—</span>;
+  const pct = scoreToPct(score);
+  if (pct === null) return <span className="text-xs italic" style={{ color: "var(--text-faint)" }}>—</span>;
   return (
-    <span className={`text-sm font-bold tabular-nums ${scoreColor(score)}`}>
-      {Math.round(score * 100)}
+    <span className="text-sm tabular-nums" style={{ fontFamily: "var(--font-serif)", color: gradeColor(letterGrade(score)), fontWeight: 600 }}>
+      {pct}
     </span>
   );
 }
 
 function haystack(j: JournalistSummary): string {
   const seeded = getDirectoryJournalist(j.slug);
-  return [
-    j.full_name,
-    j.slug,
-    j.primary_outlet,
-    j.beat,
-    ...(seeded?.aliases ?? []),
-  ]
+  return [j.full_name, j.slug, j.primary_outlet, j.beat, ...(seeded?.aliases ?? [])]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
@@ -63,9 +52,8 @@ export default function JournalistTable({
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
 
   const handleSort = (key: SortKey) => {
-    if (key === sortKey) {
-      setSortDir(d => d === "desc" ? "asc" : "desc");
-    } else {
+    if (key === sortKey) setSortDir(d => d === "desc" ? "asc" : "desc");
+    else {
       setSortKey(key);
       setSortDir("desc");
     }
@@ -88,9 +76,7 @@ export default function JournalistTable({
   return (
     <div>
       <div className="mb-4">
-        <label htmlFor="journalist-search" className="sr-only">
-          Search journalists
-        </label>
+        <label htmlFor="journalist-search" className="sr-only">Search journalists</label>
         <input
           id="journalist-search"
           type="search"
@@ -98,7 +84,8 @@ export default function JournalistTable({
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name, outlet, or beat"
           autoComplete="off"
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+          className="w-full px-3 py-2 text-sm"
+          style={{ border: "1px solid var(--border-default)", background: "var(--paper-100)", color: "var(--text-heading)", fontFamily: "var(--font-sans)" }}
         />
       </div>
 
@@ -106,33 +93,28 @@ export default function JournalistTable({
         <div className="flex flex-wrap gap-2 mb-5">
           <button
             onClick={() => setOutlet(null)}
-            className={`px-3 py-1 rounded-full text-sm transition-colors ${
-              outlet === null
-                ? "bg-gray-900 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
+            className="px-3 py-1 text-sm"
+            style={outlet === null
+              ? { background: "var(--navy-800)", color: "var(--paper-100)" }
+              : { background: "var(--paper-300)", color: "var(--text-body)" }}
           >
             All outlets
           </button>
           {outlets.map(o => {
             const slug = o.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+            const on = outlet === o;
             return (
               <div key={o} className="flex items-center gap-1">
                 <button
-                  onClick={() => setOutlet(o === outlet ? null : o)}
-                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                    outlet === o
-                      ? "bg-gray-900 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
+                  onClick={() => setOutlet(on ? null : o)}
+                  className="px-3 py-1 text-sm"
+                  style={on
+                    ? { background: "var(--navy-800)", color: "var(--paper-100)" }
+                    : { background: "var(--paper-300)", color: "var(--text-body)" }}
                 >
                   {o}
                 </button>
-                <Link
-                  href={`/outlet/${slug}`}
-                  className="text-xs text-gray-300 hover:text-blue-500 transition-colors"
-                  title={`View ${o} outlet page`}
-                >
+                <Link href={`/outlet/${slug}`} className="text-xs" style={{ color: "var(--text-faint)" }} title={`View ${o} outlet page`}>
                   →
                 </Link>
               </div>
@@ -144,75 +126,62 @@ export default function JournalistTable({
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-gray-100">
-              <th className="pb-3 pr-4 text-xs font-medium text-gray-400 uppercase tracking-wide">
-                Journalist
-              </th>
+            <tr style={{ borderBottom: "2px solid var(--navy-800)" }}>
+              <th className="pb-3 pr-4 text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)", fontWeight: 600 }}>Journalist</th>
               {COLUMNS.map(col => (
                 <th key={col.key} className="pb-3 px-2 text-right">
                   <button
                     onClick={() => handleSort(col.key)}
-                    className={`text-xs font-medium uppercase tracking-wide transition-colors flex items-center gap-1 ml-auto ${
-                      sortKey === col.key ? "text-gray-900" : "text-gray-400 hover:text-gray-600"
-                    }`}
+                    className="text-xs uppercase tracking-wide flex items-center gap-1 ml-auto"
+                    style={{ color: sortKey === col.key ? "var(--navy-800)" : "var(--text-muted)", fontWeight: 600 }}
                   >
                     <span className="hidden sm:inline">{col.label}</span>
                     <span className="sm:hidden">{col.short}</span>
-                    {sortKey === col.key && (
-                      <span className="text-gray-400">{sortDir === "desc" ? "↓" : "↑"}</span>
-                    )}
+                    {sortKey === col.key && <span>{sortDir === "desc" ? "↓" : "↑"}</span>}
                   </button>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-10 text-center text-sm text-gray-400">
-                  {query.trim()
-                    ? `No journalists match “${query.trim()}”.`
-                    : "No journalists in this list."}
+                <td colSpan={5} className="py-10 text-center text-sm" style={{ color: "var(--text-faint)" }}>
+                  {query.trim() ? `No journalists match “${query.trim()}”.` : "No journalists in this list."}
                 </td>
               </tr>
-            ) : (
-              filtered.map((j) => (
-                <tr key={j.id} className="hover:bg-gray-50 transition-colors group">
-                  <td className="py-3 pr-4">
-                    <Link href={`/journalist/${j.slug}`} className="block">
-                      <p className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                        {j.full_name}
-                      </p>
-                      {!outlet && (
-                        <p className="text-xs text-gray-400 mt-0.5">{j.primary_outlet}</p>
-                      )}
-                    </Link>
+            ) : filtered.map((j) => (
+              <tr key={j.id} style={{ borderBottom: "1px solid var(--border-hairline)" }}>
+                <td className="py-3 pr-4">
+                  <Link href={`/journalist/${j.slug}`} className="block">
+                    <p style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: "var(--text-heading)" }}>{j.full_name}</p>
+                    {!outlet && <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{j.primary_outlet}</p>}
+                  </Link>
+                </td>
+                {COLUMNS.map(col => (
+                  <td key={col.key} className="py-3 px-2 text-right">
+                    {col.key === "composite_score" ? (
+                      <Link href={`/journalist/${j.slug}`}>
+                        {j.composite_score !== null ? (
+                          <span className="tabular-nums" style={{ fontFamily: "var(--font-serif)", fontWeight: 700, fontSize: "1.1rem", color: gradeColor(letterGrade(j.composite_score)) }}>
+                            {scoreToPct(j.composite_score)}
+                          </span>
+                        ) : (
+                          <span className="text-xs italic" style={{ color: "var(--text-faint)" }}>pending</span>
+                        )}
+                      </Link>
+                    ) : (
+                      <ScoreCell score={j[col.key]} />
+                    )}
                   </td>
-                  {COLUMNS.map(col => (
-                    <td key={col.key} className={`py-3 px-2 text-right ${col.key === sortKey ? "bg-gray-50/50" : ""}`}>
-                      {col.key === "composite_score" ? (
-                        <Link href={`/journalist/${j.slug}`}>
-                          {j.composite_score !== null ? (
-                            <span className={`text-base font-black tabular-nums ${scoreColor(j.composite_score)}`}>
-                              {Math.round(j.composite_score * 100)}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-300 italic">pending</span>
-                          )}
-                        </Link>
-                      ) : (
-                        <ScoreCell score={j[col.key]} />
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
+                ))}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
-      <p className="text-xs text-gray-400 mt-4">
+      <p className="text-xs mt-4" style={{ color: "var(--text-faint)" }}>
         {filtered.length} journalist{filtered.length !== 1 ? "s" : ""}
         {outlet ? ` · ${outlet}` : ""}
         {query.trim() ? ` · matching “${query.trim()}”` : ""}
