@@ -17,10 +17,30 @@ from backend.database.db import get_conn, save_journalist, save_publication
 
 ROOT = Path(__file__).resolve().parents[1]
 DIRECTORY = ROOT / "frontend" / "data" / "directory.json"
+ADDITIONS = ROOT / "frontend" / "data" / "directory-additions.json"
+
+
+def load_directory() -> dict:
+    data = json.loads(DIRECTORY.read_text())
+    if ADDITIONS.exists():
+        extra = json.loads(ADDITIONS.read_text())
+        extra_slugs = {o["slug"] for o in extra.get("outlets", [])}
+        outlets = [o for o in data["outlets"] if o["slug"] not in extra_slugs]
+        outlets.extend(extra.get("outlets", []))
+        seen = {j["slug"] for j in data["journalists"]}
+        journalists = list(data["journalists"])
+        for j in extra.get("journalists", []):
+            if j["slug"] not in seen:
+                journalists.append(j)
+                seen.add(j["slug"])
+        data["outlets"] = outlets
+        data["journalists"] = journalists
+        data["version"] = extra.get("version", data["version"])
+    return data
 
 
 async def main():
-    data = json.loads(DIRECTORY.read_text())
+    data = load_directory()
     outlets = {o["slug"]: o for o in data["outlets"]}
     print(f"Directory v{data['version']} · {len(data['journalists'])} journalists")
 
