@@ -78,6 +78,7 @@ export interface ControlSnapshot {
   kind: "controller" | "institutional" | "closed";
   label: string;
   detail: string;
+  href?: string;
   topHolders: { entity: OwnershipEntity; pct: number | null }[];
   top3Economic: number | null;
 }
@@ -236,6 +237,7 @@ export function controlSnapshot(outletSlug: string): ControlSnapshot {
       kind: "controller",
       label: controllerStep.entity.name,
       detail: vote,
+      href: `/ownership/${controllerStep.entity.slug}`,
       topHolders: top,
       top3Economic,
     };
@@ -251,6 +253,7 @@ export function controlSnapshot(outletSlug: string): ControlSnapshot {
       detail: names
         ? `Top holders ${names}${top3Economic != null ? ` · top 3 = ${formatPct(top3Economic)}` : ""}`
         : "No 13F rows in seed yet — widely held, no dual-class controller",
+      href: `/ownership/${parent.slug}`,
       topHolders: top,
       top3Economic,
     };
@@ -261,6 +264,7 @@ export function controlSnapshot(outletSlug: string): ControlSnapshot {
     kind: "closed",
     label: tail && tail.slug !== outletSlug ? tail.name : "Private / nonprofit",
     detail: tail?.type === "trust" ? "Trust — no residual shareholders" : "No public float",
+    href: tail && tail.slug !== outletSlug ? `/ownership/${tail.slug}` : undefined,
     topHolders: [],
     top3Economic: 100,
   };
