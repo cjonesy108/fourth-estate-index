@@ -56,16 +56,25 @@ function parseRss(xml: string, limit: number): WorkItem[] {
   return items;
 }
 
+function eachMatch(re: RegExp, html: string, fn: (m: RegExpExecArray) => boolean) {
+  re.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(html)) !== null) {
+    if (!fn(match)) break;
+    if (!re.global) break;
+  }
+}
+
 function parseProPublicaPeople(html: string, limit: number): WorkItem[] {
   const items: WorkItem[] = [];
   const seen = new Set<string>();
-  const re =
+  const dated =
     /<time[^>]*datetime="([^"]+)"[\s\S]{0,500}?href="(https:\/\/www\.propublica\.org\/article\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-  for (const match of html.matchAll(re)) {
+  eachMatch(dated, html, (match) => {
     const url = match[2].split("?")[0];
-    if (seen.has(url)) continue;
+    if (seen.has(url)) return true;
     const title = stripTags(match[3]);
-    if (!title) continue;
+    if (!title) return true;
     seen.add(url);
     const published = new Date(match[1]);
     items.push({
@@ -73,17 +82,20 @@ function parseProPublicaPeople(html: string, limit: number): WorkItem[] {
       url,
       published_at: Number.isNaN(published.getTime()) ? null : published.toISOString(),
     });
-    if (items.length >= limit) return items;
-  }
-  for (const match of html.matchAll(/href="(https:\/\/www\.propublica\.org\/article\/[^"?]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+    return items.length < limit;
+  });
+  if (items.length) return items;
+
+  const fallback = /href="(https:\/\/www\.propublica\.org\/article\/[^"?]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  eachMatch(fallback, html, (match) => {
     const url = match[1];
-    if (seen.has(url)) continue;
+    if (seen.has(url)) return true;
     const title = stripTags(match[2]);
-    if (!title || title.length < 12) continue;
+    if (!title || title.length < 12) return true;
     seen.add(url);
     items.push({ title, url, published_at: null });
-    if (items.length >= limit) break;
-  }
+    return items.length < limit;
+  });
   return items;
 }
 
