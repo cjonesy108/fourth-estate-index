@@ -9,6 +9,7 @@ import {
   listDirectoryJournalists,
   outletName,
 } from "@/lib/directory";
+import { fetchRecentWork, formatWorkDate } from "@/lib/work";
 import ShareButton from "./ShareButton";
 
 function scoreColor(score: number | null): string {
@@ -74,6 +75,7 @@ export default async function JournalistPage({
   if (!profile) notFound();
 
   const seeded = getDirectoryJournalist(params.slug);
+  const work = seeded ? await fetchRecentWork(seeded) : [];
   const { pillar_scores: scores } = profile;
   const narrative = scores?.score_narrative;
   const outletSlug = seeded?.primary_outlet;
@@ -98,9 +100,6 @@ export default async function JournalistPage({
         {(profile.beat || seeded?.beat) && (
           <p className="text-gray-500 mb-3">{profile.beat || seeded?.beat}</p>
         )}
-        {profile.bio && (
-          <p className="text-gray-600 leading-relaxed mb-4">{profile.bio}</p>
-        )}
         <div className="flex flex-wrap items-center gap-4 mb-4">
           <ShareButton slug={params.slug} />
           {seeded?.author_url && (
@@ -121,14 +120,36 @@ export default async function JournalistPage({
               {profile.corpus_start?.slice(0, 10)} to{" "}
               {profile.corpus_end?.slice(0, 10)}
             </p>
+          ) : work.length > 0 ? (
+            <p>Recent bylines from the publisher. Full-text scoring still collecting.</p>
           ) : (
             <p>Listed in the directory. Full-text corpus still collecting.</p>
           )}
-          {profile.methodology_version && (
-            <p>Methodology v{profile.methodology_version}</p>
-          )}
         </div>
       </header>
+
+      {work.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold mb-4">Recent work</h2>
+          <ul className="divide-y divide-gray-100 border-t border-gray-100">
+            {work.map((item) => (
+              <li key={item.url} className="py-3">
+                <a
+                  href={item.url}
+                  className="text-sm text-gray-900 hover:text-blue-600"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {item.title}
+                </a>
+                {item.published_at && (
+                  <p className="text-xs text-gray-400 mt-1">{formatWorkDate(item.published_at)}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="mb-12">
         <div className="flex items-center justify-between mb-4">
@@ -180,8 +201,7 @@ export default async function JournalistPage({
             <p className="font-medium mb-1">Data collection in progress</p>
             <p className="text-sm">
               This journalist is in the public directory. No score is published
-              until minimum data thresholds are met — and until we have licensed
-              or openly published full text for the dimensions that need it.
+              until minimum data thresholds are met.
             </p>
           </div>
         )}
@@ -240,12 +260,8 @@ export default async function JournalistPage({
                   {c.correction_type && (
                     <span className="border border-gray-200 rounded px-1">{c.correction_type}</span>
                   )}
-                  {c.days_to_correction && <span>{c.days_to_correction}d to correction</span>}
                 </div>
                 <p className="text-sm">{c.correction_text}</p>
-                {c.correction_url && (
-                  <a href={c.correction_url} className="text-xs text-blue-600 underline" target="_blank" rel="noopener noreferrer">Source ↗</a>
-                )}
               </div>
             ))}
           </div>
