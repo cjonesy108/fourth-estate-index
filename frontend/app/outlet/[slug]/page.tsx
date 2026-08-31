@@ -4,12 +4,23 @@ import { Metadata } from "next";
 import { api } from "@/lib/api";
 import { JournalistSummary } from "@/lib/types";
 import JournalistTable from "@/app/JournalistTable";
+import {
+  directoryOutletProfile,
+  getDirectoryOutlet,
+  listDirectoryOutlets,
+  mergeJournalistList,
+} from "@/lib/directory";
+
+export function generateStaticParams() {
+  return listDirectoryOutlets().map((o) => ({ slug: o.slug }));
+}
 
 export async function generateMetadata({
   params,
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
+  const seeded = getDirectoryOutlet(params.slug);
   try {
     const outlet = await api.outlets.get(params.slug);
     return {
@@ -17,6 +28,12 @@ export async function generateMetadata({
       description: `Journalistic integrity scores for ${outlet.journalist_count} ${outlet.name} reporters, grounded in the SPJ Code of Ethics.`,
     };
   } catch {
+    if (seeded) {
+      return {
+        title: `${seeded.name} — Fourth Estate Index`,
+        description: `Journalist directory for ${seeded.name}.`,
+      };
+    }
     return { title: "Outlet — Fourth Estate Index" };
   }
 }
@@ -54,14 +71,16 @@ export default async function OutletPage({
 }: {
   params: { slug: string };
 }) {
-  let outlet;
+  let apiRows: JournalistSummary[] | null = null;
   try {
-    outlet = await api.outlets.get(params.slug);
+    apiRows = await api.journalists.list();
   } catch {
-    notFound();
+    apiRows = null;
   }
-
-  const journalists = outlet.journalists as JournalistSummary[];
+  const journalists = mergeJournalistList(apiRows);
+  const outlet = directoryOutletProfile(params.slug, journalists);
+  const seeded = getDirectoryOutlet(params.slug);
+  if (!outlet || !seeded) notFound();
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-16">
@@ -75,12 +94,14 @@ export default async function OutletPage({
 
       <header className="mb-12">
         <h1 className="text-3xl font-bold tracking-tight mb-1">{outlet.name}</h1>
-        <p className="text-gray-400 text-sm">
-          {outlet.journalist_count} journalist{outlet.journalist_count !== 1 ? "s" : ""} scored
+        <p className="text-gray-400 text-sm mb-3">
+          {outlet.journalist_count} journalist{outlet.journalist_count !== 1 ? "s" : ""} in directory
+        </p>
+        <p className="text-sm text-gray-500 leading-relaxed max-w-2xl">
+          {seeded.text_policy}
         </p>
       </header>
 
-      {/* Aggregate scores */}
       {outlet.avg_composite !== null && (
         <section className="mb-12">
           <div className="border border-gray-100 rounded-xl p-6">
@@ -99,13 +120,16 @@ export default async function OutletPage({
         </section>
       )}
 
-      {/* Journalist table */}
       <section className="mb-12">
         <h2 className="text-xl font-semibold mb-6">Journalists</h2>
-        {journalists.length === 0 ? (
-          <p className="text-gray-400 text-sm">No scored journalists yet.</p>
+        {outlet.journalists.length === 0 ? (
+          <p className="text-gray-400 text-sm">
+            {seeded.queued
+              ? "Queued as a next full-text outlet. No journalists seeded yet."
+              : "No journalists in the directory for this outlet yet."}
+          </p>
         ) : (
-          <JournalistTable journalists={journalists} hideOutletFilter />
+          <JournalistTable journalists={outlet.journalists} hideOutletFilter />
         )}
       </section>
 
