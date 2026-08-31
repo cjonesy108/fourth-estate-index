@@ -1,0 +1,74 @@
+:root {
+  --navy-950: #0d1f34;
+  --navy-900: #142c47;
+  --navy-800: #1d3b5e;
+  --navy-700: #274b71;
+  --navy-600: #345d87;
+  --navy-500: #45719d;
+  --navy-400: #6a91b6;
+  --navy-300: #97b3cf;
+  --navy-200: #c6d6e5;
+  --navy-100: #e7eef5;
+
+  --red-900: #611416;
+  --red-800: #7c1d1f;
+  --red-700: #9a2b28;
+  --red-600: #b23a34;
+  --red-500: #c65249;
+  --red-400: #d67f77;
+  --red-100: #f6e6e1;
+
+  --gold-800: #7a5411;
+  --gold-700: #9a6b16;
+  --gold-600: #b5852a;
+  --gold-500: #c99a3c;
+  --gold-100: #f4e8cd;
+
+  --paper-100: #fbf9f2;
+  --paper-200: #f3eee2;
+  --paper-300: #e9e2d2;
+  --paper-400: #d8cfbb;
+  --ink-900: #211f19;
+  --ink-700: #3c382f;
+  --ink-500: #6a6455;
+  --ink-300: #9b9484;
+  --ink-100: #d0c9b8;
+
+  --score-a: var(--navy-800);
+  --score-b: var(--navy-500);
+  --score-c: var(--gold-600);
+  --score-d: var(--red-600);
+  --score-f: var(--red-800);
+
+  --surface-page: var(--paper-200);
+  --surface-card: var(--paper-100);
+  --surface-inverse: var(--navy-900);
+
+  --text-heading: var(--ink-900);
+  --text-body: var(--ink-700);
+  --text-muted: var(--ink-500);
+  --text-faint: var(--ink-300);
+  --text-on-dark: var(--paper-100);
+  --text-link: var(--navy-700);
+  --text-link-hover: var(--red-700);
+
+  --border-hairline: var(--ink-100);
+  --border-default: var(--paper-400);
+  --border-focus: var(--navy-500);
+
+  --shadow-color: 13, 31, 52;
+  --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.10);
+  --shadow-md: 0 4px 14px rgba(var(--shadow-color), 0.12);
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  --font-display: var(--font-garamond), "EB Garamond", Georgia, serif;
+  --font-serif: var(--font-garamond), "EB Garamond", Georgia, serif;
+  --font-sans: var(--font-sans), "Open Sans", sans-serif;
+  --font-masthead: var(--font-garamond), "EB Garamond", Georgia, serif;
+
+  --tracking-eyebrow: 0.14em;
+  --tracking-masthead: 0.18em;
+}

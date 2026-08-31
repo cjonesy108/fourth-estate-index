@@ -1,9 +1,13 @@
+@import "../styles/tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  html,
   body {
-    @apply text-gray-900 bg-white;
+    background: var(--surface-page);
+    color: var(--text-body);
   }
 }
