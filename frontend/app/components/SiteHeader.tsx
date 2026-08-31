@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { MARK_SRC } from "./brandAssets";
 
 const LINKS = [
   { href: "/", label: "Index" },
@@ -20,12 +21,15 @@ export default function SiteHeader() {
         </div>
       </div>
       <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
-        <Link href="/" className="flex flex-col leading-none">
-          <span style={{ fontFamily: "var(--font-masthead)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--navy-800)", fontSize: 13, fontWeight: 500 }}>
-            Fourth Estate
-          </span>
-          <span style={{ fontFamily: "var(--font-masthead)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--navy-800)", fontSize: 28, fontWeight: 500, marginTop: 3 }}>
-            Index
+        <Link href="/" className="flex items-center gap-3 min-w-0">
+          <img src={MARK_SRC} alt="4th Estate Index" width={52} height={55} style={{ height: 52, width: "auto" }} />
+          <span className="flex flex-col leading-none">
+            <span style={{ fontFamily: "var(--font-masthead)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--navy-800)", fontSize: 13, fontWeight: 500 }}>
+              Fourth Estate
+            </span>
+            <span style={{ fontFamily: "var(--font-masthead)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--navy-800)", fontSize: 28, fontWeight: 500, marginTop: 3 }}>
+              Index
+            </span>
           </span>
         </Link>
         <nav className="flex items-center gap-6" style={{ fontFamily: "var(--font-sans)" }}>
