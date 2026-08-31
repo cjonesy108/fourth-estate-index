@@ -1,0 +1,38 @@
+{
+  "rule_extra": "Firm PAC and named officers are separate rows. BlackRock PAC is not Larry Fink. Larry Fink is not CNN.",
+  "records": [
+    {
+      "entity": "blackrock",
+      "layer": "parent_pac",
+      "cycle": "2024",
+      "amount_usd": 1106500,
+      "amount_label": "$1.11M PAC / $2.60M org cycle",
+      "party_lean": "mixed",
+      "summary": "BlackRock does not spend corporate treasury on federal candidates. BlackRock PAC (employee-funded) plus employees totaled about $2.60M in the 2024 cycle (PAC $1.11M, individuals $1.47M), ~65/35 D/R. This is the firm, not Larry Fink and not CNN.",
+      "source_url": "https://www.opensecrets.org/orgs/blackrock/totals?id=D000021872",
+      "source_label": "OpenSecrets — BlackRock 2024"
+    },
+    {
+      "entity": "larry-fink",
+      "layer": "individual",
+      "cycle": "2024",
+      "amount_usd": null,
+      "amount_label": "candidate max-outs, not Super PAC scale",
+      "party_lean": "D",
+      "summary": "Fink's own 2023–24 itemized gifts are hard-money max-outs (Brown, Tester, Warner, Kaine, Jeffries and related victory funds; one GOP Financial Services member). Different checkbook from BlackRock PAC. Not attached to any newsroom.",
+      "source_url": "https://www.opensecrets.org/donor-lookup/results?name=larry+fink",
+      "source_label": "OpenSecrets donor lookup / FEC"
+    },
+    {
+      "entity": "robert-iger",
+      "layer": "individual",
+      "cycle": "2024",
+      "amount_usd": 10000,
+      "amount_label": "$5k × 2 into Disney PAC",
+      "party_lean": "mixed",
+      "summary": "Iger's visible 2023–24 federal activity in the seed is contributions into Disney PAC ($5,000 in Nov 2023 and Oct 2024). That is personal money into the company PAC, not ABC News spending.",
+      "source_url": "https://www.opensecrets.org/orgs/walt-disney-co/totals?id=D000000128",
+      "source_label": "FEC / Disney PAC receipts"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "affiliations": [
+    {"person": "larry-fink", "org": "blackrock", "role": "Chairman & CEO"},
+    {"person": "robert-iger", "org": "walt-disney", "role": "CEO"}
+  ],
+  "entities": [
+    {
+      "slug": "larry-fink",
+      "name": "Larry Fink",
+      "type": "individual",
+      "is_outlet": false,
+      "ticker": null,
+      "control_summary": "CEO of BlackRock. Not a media controller. Personal FEC giving is separate from BlackRock PAC and is not attributed to CNN or any WBD title.",
+      "notes": "Officer of an institutional holder, not an owner of newsrooms."
+    },
+    {
+      "slug": "robert-iger",
+      "name": "Robert Iger",
+      "type": "individual",
+      "is_outlet": false,
+      "ticker": null,
+      "control_summary": "CEO of Disney. Hired executive, not a dual-class controller. Personal giving is separate from Disney PAC and from ABC News.",
+      "notes": null
+    }
+  ]
+}
