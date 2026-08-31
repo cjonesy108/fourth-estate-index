@@ -1,4 +1,5 @@
 import raw from "@/data/directory.json";
+import additions from "@/data/directory-additions.json";
 import { JournalistProfile, JournalistSummary, OutletProfile, OutletSummary } from "./types";
 
 export type AccessKind = "full_api" | "soft_scrape" | "full_public" | "rss" | "licensed" | "queued";
@@ -27,6 +28,7 @@ export interface DirectoryJournalist {
   guardian_tag?: string | null;
   author_slug?: string | null;
   author_url?: string | null;
+  feed_url?: string | null;
   x_handle?: string | null;
 }
 
@@ -39,7 +41,27 @@ interface DirectoryFile {
   journalists: DirectoryJournalist[];
 }
 
-const data = raw as DirectoryFile;
+const base = raw as DirectoryFile;
+const extra = additions as { outlets?: DirectoryOutlet[]; journalists?: DirectoryJournalist[] };
+
+const extraOutletSlugs = new Set((extra.outlets ?? []).map((o) => o.slug));
+const outlets: DirectoryOutlet[] = [
+  ...base.outlets.filter((o) => !extraOutletSlugs.has(o.slug)).map((o) =>
+    o.slug === "propublica" ? { ...o, queued: false } : o
+  ),
+  ...(extra.outlets ?? []),
+];
+const journalists: DirectoryJournalist[] = [
+  ...base.journalists,
+  ...(extra.journalists ?? []),
+];
+
+const data: DirectoryFile = {
+  ...base,
+  version: extra && "version" in extra ? String((extra as { version?: string }).version ?? base.version) : base.version,
+  outlets,
+  journalists,
+};
 
 const outletsBySlug = new Map(data.outlets.map((o) => [o.slug, o]));
 const journalistsBySlug = new Map(data.journalists.map((j) => [j.slug, j]));
