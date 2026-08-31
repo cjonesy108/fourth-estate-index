@@ -75,10 +75,8 @@ export default function OwnershipIndex() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-700">
-                      {snap.kind === "controller" ? (
-                        <Link href={`/ownership/${controlSnapshot(o.slug).label === snap.label ? chainControllerSlug(o.slug) : o.slug}`} className="hover:underline">
-                          {snap.label}
-                        </Link>
+                      {snap.href ? (
+                        <Link href={snap.href} className="hover:underline">{snap.label}</Link>
                       ) : (
                         snap.label
                       )}
@@ -87,11 +85,13 @@ export default function OwnershipIndex() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs leading-relaxed">
-                      {snap.kind === "institutional" ? snap.detail : snap.kind === "closed" ? snap.detail : (
-                        snap.topHolders.length
-                          ? snap.topHolders.map((h) => `${h.entity.name} ${formatPct(h.pct)}`).join(" · ")
-                          : "—"
-                      )}
+                      {snap.kind === "institutional"
+                        ? snap.detail
+                        : snap.kind === "closed"
+                        ? snap.detail
+                        : snap.topHolders.length
+                        ? snap.topHolders.map((h) => `${h.entity.name} ${formatPct(h.pct)}`).join(" · ")
+                        : "—"}
                     </td>
                   </tr>
                 );
@@ -116,11 +116,11 @@ export default function OwnershipIndex() {
                 </div>
                 {officers.length > 0 && (
                   <p className="text-sm text-gray-500 mb-3">
-                    {officers.map((o, i) => (
-                      <span key={o.person.slug}>
+                    {officers.map((off, i) => (
+                      <span key={off.person.slug}>
                         {i > 0 && ", "}
-                        <Link href={`/ownership/${o.person.slug}`} className="hover:underline">{o.person.name}</Link>
-                        <span className="text-gray-400"> · {o.role}</span>
+                        <Link href={`/ownership/${off.person.slug}`} className="hover:underline">{off.person.name}</Link>
+                        <span className="text-gray-400"> · {off.role}</span>
                       </span>
                     ))}
                   </p>
@@ -136,7 +136,7 @@ export default function OwnershipIndex() {
                           {h.issuer.name}{h.issuer.ticker ? ` (${h.issuer.ticker})` : ""}
                         </Link>
                         {h.outlets.length > 0 && (
-                          <span className="text-gray-400">— {h.outlets.map((o) => o.name).join(", ")}</span>
+                          <span className="text-gray-400">— {h.outlets.map((x) => x.name).join(", ")}</span>
                         )}
                       </li>
                     ))}
@@ -190,13 +190,4 @@ export default function OwnershipIndex() {
       </section>
     </main>
   );
-}
-
-function chainControllerSlug(outletSlug: string): string {
-  const { controlChain } = require("@/lib/ownership") as typeof import("@/lib/ownership");
-  const chain = controlChain(outletSlug);
-  const controller = [...chain].reverse().find((c) =>
-    ["family", "individual", "trust"].includes(c.entity.type)
-  );
-  return controller?.entity.slug ?? outletSlug;
 }
