@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import {
   EDGE_LABEL,
   LAYER_LABEL,
+  VIA_LABEL,
+  clickThrough,
   contributionsFor,
   controlChain,
   controllerHoldings,
@@ -13,6 +15,8 @@ import {
   getEntity,
   getGraph,
   institutionHoldings,
+  officersOf,
+  orgsOf,
   publicParent,
 } from "@/lib/ownership";
 
@@ -43,6 +47,9 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
     : [];
   const kids = descendantOutlets(entity.slug);
   const giving = contributionsFor(entity.slug);
+  const power = clickThrough(entity.slug);
+  const officers = officersOf(entity.slug);
+  const seats = orgsOf(entity.slug);
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-16">
@@ -61,6 +68,16 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
         <h1 className="text-3xl font-bold tracking-tight mb-3">{entity.name}</h1>
         <p className="text-gray-600 leading-relaxed">{entity.control_summary}</p>
         {entity.notes && <p className="text-sm text-gray-500 mt-3">{entity.notes}</p>}
+        {seats.length > 0 && (
+          <p className="text-sm text-gray-500 mt-3">
+            {seats.map((s, i) => (
+              <span key={s.org.slug}>
+                {i > 0 && " · "}
+                {s.role} at <Link href={`/ownership/${s.org.slug}`} className="hover:underline">{s.org.name}</Link>
+              </span>
+            ))}
+          </p>
+        )}
       </header>
 
       {chain.length > 1 && (
@@ -89,28 +106,71 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
         </section>
       )}
 
+      {power.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-2">Click through</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            People and firms with voting or economic power on this chain. Opening them loads <em>their</em> file — not this page’s FEC.
+          </p>
+          <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
+            {power.map((p) => (
+              <li key={p.entity.slug} className="px-4 py-3 flex flex-wrap items-baseline justify-between gap-2">
+                <Link href={`/ownership/${p.entity.slug}`} className="font-medium hover:underline">{p.entity.name}</Link>
+                <span className="text-xs text-gray-400">{VIA_LABEL[p.via]} · {p.role}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {officers.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-4">Officers</h2>
+          <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
+            {officers.map((o) => (
+              <li key={o.person.slug} className="px-4 py-3 flex justify-between gap-3">
+                <Link href={`/ownership/${o.person.slug}`} className="font-medium hover:underline">{o.person.name}</Link>
+                <span className="text-sm text-gray-400">{o.role}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {holders.length > 0 && (
         <section className="mb-12">
           <h2 className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-2">Economic stake</h2>
           <p className="text-sm text-gray-500 mb-4">
-            Institutional holders of {parent ? parent.name : entity.name}{parent?.ticker ? ` (${parent.ticker})` : ""}. Not controllers. As of {graph.as_of_economic}.
+            Institutional holders of {parent ? parent.name : entity.name}{parent?.ticker ? ` (${parent.ticker})` : ""}. Not controllers. As of {graph.as_of_economic}. Click a holder to open its officers.
           </p>
           <table className="w-full text-sm border border-gray-100 rounded-lg">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100">
                 <th className="px-4 py-3 font-medium">Holder</th>
                 <th className="px-4 py-3 font-medium">Economic</th>
-                <th className="px-4 py-3 font-medium">Source</th>
+                <th className="px-4 py-3 font-medium">People</th>
               </tr>
             </thead>
             <tbody>
-              {holders.map(({ entity: h, edge }) => (
-                <tr key={h.slug} className="border-b border-gray-50 last:border-0">
-                  <td className="px-4 py-3"><Link href={`/ownership/${h.slug}`} className="hover:underline">{h.name}</Link></td>
-                  <td className="px-4 py-3 tabular-nums">{formatPct(edge.pct_economic)}</td>
-                  <td className="px-4 py-3 text-gray-400"><a href={edge.source_url} className="hover:underline" target="_blank" rel="noreferrer">{edge.source_label}</a></td>
-                </tr>
-              ))}
+              {holders.map(({ entity: h, edge }) => {
+                const people = officersOf(h.slug);
+                return (
+                  <tr key={h.slug} className="border-b border-gray-50 last:border-0">
+                    <td className="px-4 py-3"><Link href={`/ownership/${h.slug}`} className="hover:underline">{h.name}</Link></td>
+                    <td className="px-4 py-3 tabular-nums">{formatPct(edge.pct_economic)}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {people.length === 0
+                        ? "—"
+                        : people.map((p, i) => (
+                            <span key={p.person.slug}>
+                              {i > 0 && ", "}
+                              <Link href={`/ownership/${p.person.slug}`} className="hover:underline">{p.person.name}</Link>
+                            </span>
+                          ))}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </section>
@@ -177,11 +237,11 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
 
       {giving.length > 0 && (
         <section className="mb-12">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-2">Political money on this chain</h2>
-          <p className="text-sm text-gray-500 mb-4">Attributed to the giver, not to the masthead.</p>
+          <h2 className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-2">Political money for this entity</h2>
+          <p className="text-sm text-gray-500 mb-4">Only the checkbooks that belong here — not every holder on the chain.</p>
           <ul className="space-y-4">
             {giving.map((g) => (
-              <li key={`${g.entity}-${g.cycle}`} className="border border-gray-100 rounded-lg p-4">
+              <li key={`${g.entity}-${g.layer}-${g.cycle}`} className="border border-gray-100 rounded-lg p-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
                   <Link href={`/ownership/${g.entity}`} className="font-medium hover:underline">
                     {getEntity(g.entity)?.name ?? g.entity}
