@@ -9,7 +9,6 @@ import asyncpg
 
 def _dsn() -> str:
     url = os.environ["DATABASE_URL"]
-    # asyncpg uses postgresql:// not postgresql+asyncpg://
     return url.replace("postgresql+asyncpg://", "postgresql://")
 
 
@@ -18,7 +17,6 @@ async def get_conn() -> asyncpg.Connection:
 
 
 async def save_journalist(conn, *, full_name: str, slug: str, primary_outlet: str, guardian_tag: str = None, x_handle: str = None) -> str:
-    """Insert journalist if not exists. Returns their UUID."""
     row = await conn.fetchrow(
         """
         INSERT INTO journalists (full_name, slug, primary_outlet, guardian_tag, x_handle)
@@ -36,7 +34,6 @@ async def save_journalist(conn, *, full_name: str, slug: str, primary_outlet: st
 
 
 async def save_publication(conn, *, name: str, domain: str, api_source: str) -> str:
-    """Insert publication if not exists. Returns their UUID."""
     row = await conn.fetchrow(
         """
         INSERT INTO publications (name, domain, api_source)
@@ -51,22 +48,22 @@ async def save_publication(conn, *, name: str, domain: str, api_source: str) -> 
 
 
 async def save_articles(conn, journalist_id: str, publication_id: str, articles: list, source_api: str = "guardian") -> int:
-    """Bulk insert articles. Skips duplicates by guardian_id. Returns count inserted."""
     inserted = 0
     for a in articles:
-        # Strip timezone info — store everything as UTC naive
         published_at = a.published_at.replace(tzinfo=None) if a.published_at.tzinfo else a.published_at
+        access_level = getattr(a, "access_level", None) or ("full" if a.body else "metadata")
+        lede = getattr(a, "lede", None) or a.subheadline
         result = await conn.execute(
             """
             INSERT INTO articles
-                (journalist_id, publication_id, headline, subheadline, body,
-                 url, published_at, section, word_count, source_api, guardian_id)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+                (journalist_id, publication_id, headline, subheadline, body, lede,
+                 access_level, url, published_at, section, word_count, source_api, guardian_id)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
             ON CONFLICT (guardian_id) DO NOTHING
             """,
             journalist_id, publication_id,
-            a.headline, a.subheadline, a.body,
-            a.url, published_at, a.section, a.word_count,
+            a.headline, a.subheadline, a.body, lede,
+            access_level, a.url, published_at, a.section, a.word_count,
             source_api, a.guardian_id,
         )
         if result == "INSERT 0 1":
@@ -75,7 +72,6 @@ async def save_articles(conn, journalist_id: str, publication_id: str, articles:
 
 
 async def save_analysis_result(conn, journalist_id: str, analysis) -> str:
-    """Store the raw Claude analysis result. Returns UUID."""
     import json
     row = await conn.fetchrow(
         """
@@ -97,10 +93,6 @@ async def save_analysis_result(conn, journalist_id: str, analysis) -> str:
 
 
 async def save_citations(conn, analysis_result_id: str, citations: list, article_id_map: dict):
-    """
-    Store validated citations linked to their analysis result.
-    article_id_map: {guardian_id: db_uuid} so we can link citations to articles.
-    """
     for c in citations:
         article_db_id = article_id_map.get(c.article_id) if c.article_id else None
         await conn.execute(
@@ -109,17 +101,11 @@ async def save_citations(conn, analysis_result_id: str, citations: list, article
                 (analysis_result_id, article_id, cited_text, dimension, flag_type, flag_value)
             VALUES ($1,$2,$3,$4,$5,$6)
             """,
-            analysis_result_id,
-            article_db_id,
-            c.cited_text,
-            c.dimension,
-            c.flag_type,
-            c.flag_value,
+            analysis_result_id, article_db_id, c.cited_text, c.dimension, c.flag_type, c.flag_value,
         )
 
 
 async def save_pillar_scores(conn, journalist_id: str, scores: dict, corpus_size: int, methodology_version: str):
-    """Store pillar and composite scores."""
     import json
     await conn.execute(
         """
@@ -130,21 +116,16 @@ async def save_pillar_scores(conn, journalist_id: str, scores: dict, corpus_size
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
         """,
         journalist_id, methodology_version,
-        scores.get("pillar_1_score"),
-        scores.get("pillar_2_score"),
-        scores.get("pillar_3_score"),
-        scores.get("pillar_4_score"),
-        scores.get("composite_score"),
-        corpus_size,
+        scores.get("pillar_1_score"), scores.get("pillar_2_score"),
+        scores.get("pillar_3_score"), scores.get("pillar_4_score"),
+        scores.get("composite_score"), corpus_size,
         json.dumps(scores.get("dimensions_scored", {})),
     )
 
 
 async def save_corrections(conn, journalist_id: str, publication_id: str, corrections: list, article_id_map: dict) -> int:
-    """Store corrections linked to journalist and original article where matched."""
     inserted = 0
     for c in corrections:
-        # Try to find the original article in the DB by headline match
         article_db_id = None
         if c.original_headline:
             row = await conn.fetchrow(
@@ -153,9 +134,7 @@ async def save_corrections(conn, journalist_id: str, publication_id: str, correc
             )
             if row:
                 article_db_id = str(row["id"])
-
         corrected_at = c.corrected_at.replace(tzinfo=None) if c.corrected_at and c.corrected_at.tzinfo else c.corrected_at
-
         result = await conn.execute(
             """
             INSERT INTO corrections
@@ -165,8 +144,7 @@ async def save_corrections(conn, journalist_id: str, publication_id: str, correc
             ON CONFLICT (journalist_id, correction_text, corrected_at) DO NOTHING
             """,
             journalist_id, article_db_id, publication_id,
-            c.correction_text, c.correction_type,
-            corrected_at, c.correction_url,
+            c.correction_text, c.correction_type, corrected_at, c.correction_url,
         )
         if result == "INSERT 0 1":
             inserted += 1
@@ -174,7 +152,6 @@ async def save_corrections(conn, journalist_id: str, publication_id: str, correc
 
 
 async def save_social_posts(conn, journalist_id: str, posts: list) -> int:
-    """Bulk insert social posts. Skips duplicates by post_id. Returns count inserted."""
     inserted = 0
     for p in posts:
         posted_at = p.posted_at.replace(tzinfo=None) if p.posted_at.tzinfo else p.posted_at
@@ -185,8 +162,7 @@ async def save_social_posts(conn, journalist_id: str, posts: list) -> int:
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             ON CONFLICT (post_id) DO NOTHING
             """,
-            journalist_id, p.platform, p.post_id, p.content,
-            p.is_reply, p.is_quote, posted_at,
+            journalist_id, p.platform, p.post_id, p.content, p.is_reply, p.is_quote, posted_at,
         )
         if result == "INSERT 0 1":
             inserted += 1
@@ -194,63 +170,42 @@ async def save_social_posts(conn, journalist_id: str, posts: list) -> int:
 
 
 async def get_existing_post_ids(conn, journalist_id: str) -> set[str]:
-    """Fetch post_ids already stored for this journalist — used for dedup."""
-    rows = await conn.fetch(
-        "SELECT post_id FROM social_posts WHERE journalist_id = $1",
-        journalist_id,
-    )
+    rows = await conn.fetch("SELECT post_id FROM social_posts WHERE journalist_id = $1", journalist_id)
     return {r["post_id"] for r in rows}
 
 
 async def get_social_posts(conn, journalist_id: str) -> list[dict]:
-    """Fetch all stored social posts for a journalist, newest first."""
     rows = await conn.fetch(
-        """
-        SELECT post_id, content, is_reply, is_quote, posted_at
-        FROM social_posts
-        WHERE journalist_id = $1
-        ORDER BY posted_at DESC
-        """,
+        """SELECT post_id, content, is_reply, is_quote, posted_at
+           FROM social_posts WHERE journalist_id = $1 ORDER BY posted_at DESC""",
         journalist_id,
     )
     return [dict(r) for r in rows]
 
 
 async def get_existing_guardian_ids(conn, journalist_id: str) -> set[str]:
-    """Fetch guardian_ids already stored for this journalist — used for dedup."""
-    rows = await conn.fetch(
-        "SELECT guardian_id FROM articles WHERE journalist_id = $1",
-        journalist_id,
-    )
+    rows = await conn.fetch("SELECT guardian_id FROM articles WHERE journalist_id = $1", journalist_id)
     return {r["guardian_id"] for r in rows}
 
 
 async def get_article_id_map(conn, journalist_id: str) -> dict:
-    """Returns {guardian_id: db_uuid} for all stored articles for this journalist."""
-    rows = await conn.fetch(
-        "SELECT id, guardian_id FROM articles WHERE journalist_id = $1",
-        journalist_id,
-    )
+    rows = await conn.fetch("SELECT id, guardian_id FROM articles WHERE journalist_id = $1", journalist_id)
     return {r["guardian_id"]: str(r["id"]) for r in rows}
 
 
 async def get_articles_for_analysis(conn, journalist_id: str, limit: int = 50) -> list[dict]:
-    """Fetch article content from DB for analysis (used when re-running without new scrape)."""
     rows = await conn.fetch(
         """SELECT headline, subheadline, body, guardian_id
            FROM articles
-           WHERE journalist_id = $1 AND body IS NOT NULL
+           WHERE journalist_id = $1
+             AND body IS NOT NULL
+             AND COALESCE(access_level, 'full') = 'full'
            ORDER BY published_at DESC
            LIMIT $2""",
         journalist_id, limit,
     )
     return [
-        {
-            "body":        r["body"],
-            "headline":    r["headline"],
-            "subheadline": r["subheadline"],
-            "url":         r["guardian_id"],
-            "guardian_id": r["guardian_id"],
-        }
+        {"body": r["body"], "headline": r["headline"], "subheadline": r["subheadline"],
+         "url": r["guardian_id"], "guardian_id": r["guardian_id"]}
         for r in rows
     ]
