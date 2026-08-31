@@ -1,4 +1,6 @@
 import graph from "@/data/ownership.json";
+import additions from "@/data/ownership-additions.json";
+import contributionsFile from "@/data/contributions.json";
 
 export type EntityType =
   | "outlet"
@@ -50,12 +52,52 @@ export interface OwnershipGraph {
   edges: OwnershipEdge[];
 }
 
-const data = graph as OwnershipGraph;
+export type ContributionLayer = "controller" | "parent_pac";
+
+export interface ContributionRecord {
+  entity: string;
+  layer: ContributionLayer;
+  cycle: string;
+  amount_usd: number | null;
+  amount_label: string;
+  party_lean: "D" | "R" | "mixed";
+  summary: string;
+  source_url: string;
+  source_label: string;
+}
+
+const data: OwnershipGraph = {
+  ...(graph as OwnershipGraph),
+  entities: [...(graph as OwnershipGraph).entities, ...(additions.entities as OwnershipEntity[])],
+  edges: [...(graph as OwnershipGraph).edges, ...(additions.edges as OwnershipEdge[])],
+};
+
+const contributions = contributionsFile as {
+  as_of: string;
+  rule: string;
+  records: ContributionRecord[];
+};
 
 const entitiesBySlug = new Map(data.entities.map((e) => [e.slug, e]));
 
 export function getGraph(): OwnershipGraph {
   return data;
+}
+
+export function getContributionsMeta() {
+  return { as_of: contributions.as_of, rule: contributions.rule };
+}
+
+export function contributionsFor(slug: string): ContributionRecord[] {
+  const slugs = new Set([slug]);
+  for (const step of controlChain(slug)) slugs.add(step.entity.slug);
+  const parent = publicParent(slug);
+  if (parent) slugs.add(parent.slug);
+  return contributions.records.filter((r) => slugs.has(r.entity));
+}
+
+export function allContributions(): ContributionRecord[] {
+  return contributions.records;
 }
 
 export function getEntity(slug: string): OwnershipEntity | undefined {
@@ -87,7 +129,6 @@ export function edgesTo(slug: string): OwnershipEdge[] {
 
 const CONTROL_EDGES: EdgeType[] = ["operates", "wholly_owns", "voting_control", "beneficial_owner"];
 
-/** Walk holders of an asset along operating/control edges (not 13F). */
 export function controlChain(outletSlug: string): { entity: OwnershipEntity; via: OwnershipEdge | null }[] {
   const chain: { entity: OwnershipEntity; via: OwnershipEdge | null }[] = [];
   const start = getEntity(outletSlug);
@@ -110,12 +151,10 @@ export function controlChain(outletSlug: string): { entity: OwnershipEntity; via
   return chain;
 }
 
-/** Ultimate public issuer on the control chain, if any. */
 export function publicParent(outletSlug: string): OwnershipEntity | undefined {
   return controlChain(outletSlug).map((c) => c.entity).find((e) => e.type === "public_issuer");
 }
 
-/** Who holds economic equity in this entity (13F / economic_equity edges only). */
 export function economicHolders(entitySlug: string): { entity: OwnershipEntity; edge: OwnershipEdge }[] {
   return data.edges
     .filter((e) => e.asset === entitySlug && e.type === "economic_equity")
@@ -124,7 +163,6 @@ export function economicHolders(entitySlug: string): { entity: OwnershipEntity; 
     .sort((a, b) => (b.edge.pct_economic ?? 0) - (a.edge.pct_economic ?? 0));
 }
 
-/** Outlets reachable downward from an issuer/holder via operates/wholly_owns. */
 export function descendantOutlets(slug: string): OwnershipEntity[] {
   const out: OwnershipEntity[] = [];
   const seen = new Set<string>();
@@ -149,7 +187,6 @@ export interface HolderPosition {
   outlets: OwnershipEntity[];
 }
 
-/** Media issuers an institution holds, plus the outlets under each issuer. */
 export function institutionHoldings(institutionSlug: string): HolderPosition[] {
   return data.edges
     .filter((e) => e.holder === institutionSlug && e.type === "economic_equity")
@@ -184,4 +221,9 @@ export const EDGE_LABEL: Record<EdgeType, string> = {
   economic_equity: "economic stake",
   voting_control: "voting control",
   beneficial_owner: "beneficial owner",
+};
+
+export const LAYER_LABEL: Record<ContributionLayer, string> = {
+  controller: "Controller / family",
+  parent_pac: "Parent PAC / company cycle",
 };

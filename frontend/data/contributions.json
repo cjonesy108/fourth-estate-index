@@ -1,0 +1,72 @@
+{
+  "as_of": "2026-08-30",
+  "rule": "Money is attributed only to the entity that gave it. Controller personal/family giving is separate from a parent-company PAC. Index-fund PACs are omitted. Employee bundling at Amazon or Disney is not treated as Jeff Bezos or ABC News.",
+  "records": [
+    {
+      "entity": "philip-anschutz",
+      "layer": "controller",
+      "cycle": "multi",
+      "amount_usd": 5000000,
+      "amount_label": ">$5M state + federal since 1989",
+      "party_lean": "R",
+      "summary": "Anschutz and spouse: more than $5 million in state and federal contributions since 1989. After 2016, almost entirely Republican party committees, candidates, and conservative super PACs (NRSC, NRCC, RNC, Senate Leadership Fund).",
+      "source_url": "https://www.opensecrets.org/news/2022/04/billionaire-coachella-owner-pours-money-into-political-contributions-boosting-republicans",
+      "source_label": "OpenSecrets, April 2022"
+    },
+    {
+      "entity": "jeff-bezos",
+      "layer": "controller",
+      "cycle": "2014-2018",
+      "amount_usd": 20000,
+      "amount_label": "modest candidate max-outs",
+      "party_lean": "mixed",
+      "summary": "Bezos's own FEC candidate giving after buying the Post has been small and split (WA Democrats and UT Republicans). Amazon PAC and Amazon-employee totals are a different entity and are not attached to The Washington Post.",
+      "source_url": "https://rollcall.com/2018/04/18/amazons-bezos-contributed-over-20000-to-members-of-congress/",
+      "source_label": "Roll Call / FEC, 2018"
+    },
+    {
+      "entity": "news-corp",
+      "layer": "parent_pac",
+      "cycle": "2024",
+      "amount_usd": 30500,
+      "amount_label": "$30,500 PAC disbursements",
+      "party_lean": "mixed",
+      "summary": "News Corporation PAC 2024 disbursements totaled $30,500, described by the company as nearly even between the parties. Separate $50,000 corporate 527 split RAGA/DAGA. This is the parent PAC, not Fox News or the New York Post.",
+      "source_url": "https://newscorp.com/wp-content/uploads/2025/04/News-Corp-2024-Political-Activity-Report.pdf",
+      "source_label": "News Corp 2024 Political Activity Report"
+    },
+    {
+      "entity": "comcast",
+      "layer": "parent_pac",
+      "cycle": "2024",
+      "amount_usd": 7365222,
+      "amount_label": "$7.4M cycle (PAC + affiliates + employees)",
+      "party_lean": "mixed",
+      "summary": "OpenSecrets 2024 cycle total for Comcast Corp and affiliates: about $7.4 million, mix of PAC and employee giving. Comcast/NBCU federal PAC raised $2.7M and spent $2.4M in the 2025–26 window. Not NBC News's money.",
+      "source_url": "https://www.opensecrets.org/orgs/comcast-corp/summary?id=d000000461",
+      "source_label": "OpenSecrets — Comcast 2024 cycle"
+    },
+    {
+      "entity": "walt-disney",
+      "layer": "parent_pac",
+      "cycle": "2024",
+      "amount_usd": 3550987,
+      "amount_label": "$3.6M cycle (mostly employees)",
+      "party_lean": "D",
+      "summary": "OpenSecrets 2024 Walt Disney Co total ~$3.55M. Vast majority is employees, not the corporate PAC (~$244k PAC). Lean Democratic. Not ABC News's money.",
+      "source_url": "https://www.opensecrets.org/orgs/walt-disney-co/totals?id=D000000128",
+      "source_label": "OpenSecrets — Walt Disney Co 2024"
+    },
+    {
+      "entity": "michael-bloomberg",
+      "layer": "controller",
+      "cycle": "multi",
+      "amount_usd": null,
+      "amount_label": "historically very large",
+      "party_lean": "D",
+      "summary": "Michael Bloomberg is one of the largest self-funders and Democratic outside spenders in modern cycles, including his own presidential campaign. Treat as controller giving, not as 'Bloomberg News donated.' Line-item FEC ingest is the next pass.",
+      "source_url": "https://www.opensecrets.org/",
+      "source_label": "OpenSecrets (controller, not outlet)"
+    }
+  ]
+}

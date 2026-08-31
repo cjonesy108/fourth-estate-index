@@ -3,6 +3,8 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   EDGE_LABEL,
+  LAYER_LABEL,
+  contributionsFor,
   controlChain,
   controllerHoldings,
   descendantOutlets,
@@ -40,6 +42,7 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
     ? controllerHoldings(entity.slug)
     : [];
   const kids = descendantOutlets(entity.slug);
+  const giving = contributionsFor(entity.slug);
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-16">
@@ -53,8 +56,7 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
 
       <header className="mb-12">
         <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">
-          {entity.type.replace("_", " ")}
-          {entity.ticker ? ` · ${entity.ticker}` : ""}
+          {entity.type.replace("_", " ")}{entity.ticker ? ` · ${entity.ticker}` : ""}
         </p>
         <h1 className="text-3xl font-bold tracking-tight mb-3">{entity.name}</h1>
         <p className="text-gray-600 leading-relaxed">{entity.control_summary}</p>
@@ -72,9 +74,7 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
                   {step.entity.slug === entity.slug ? (
                     <span className="font-medium">{step.entity.name}</span>
                   ) : (
-                    <Link href={`/ownership/${step.entity.slug}`} className="font-medium hover:underline">
-                      {step.entity.name}
-                    </Link>
+                    <Link href={`/ownership/${step.entity.slug}`} className="font-medium hover:underline">{step.entity.name}</Link>
                   )}
                   {step.via && (
                     <span className="text-sm text-gray-400 ml-2">
@@ -93,44 +93,32 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
         <section className="mb-12">
           <h2 className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-2">Economic stake</h2>
           <p className="text-sm text-gray-500 mb-4">
-            Institutional holders of {parent ? parent.name : entity.name}
-            {parent?.ticker ? ` (${parent.ticker})` : ""}. Not controllers. As of {graph.as_of_economic}.
+            Institutional holders of {parent ? parent.name : entity.name}{parent?.ticker ? ` (${parent.ticker})` : ""}. Not controllers. As of {graph.as_of_economic}.
           </p>
-          <div className="overflow-x-auto border border-gray-100 rounded-lg">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                  <th className="px-4 py-3 font-medium">Holder</th>
-                  <th className="px-4 py-3 font-medium">Economic</th>
-                  <th className="px-4 py-3 font-medium">Source</th>
+          <table className="w-full text-sm border border-gray-100 rounded-lg">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                <th className="px-4 py-3 font-medium">Holder</th>
+                <th className="px-4 py-3 font-medium">Economic</th>
+                <th className="px-4 py-3 font-medium">Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {holders.map(({ entity: h, edge }) => (
+                <tr key={h.slug} className="border-b border-gray-50 last:border-0">
+                  <td className="px-4 py-3"><Link href={`/ownership/${h.slug}`} className="hover:underline">{h.name}</Link></td>
+                  <td className="px-4 py-3 tabular-nums">{formatPct(edge.pct_economic)}</td>
+                  <td className="px-4 py-3 text-gray-400"><a href={edge.source_url} className="hover:underline" target="_blank" rel="noreferrer">{edge.source_label}</a></td>
                 </tr>
-              </thead>
-              <tbody>
-                {holders.map(({ entity: h, edge }) => (
-                  <tr key={h.slug} className="border-b border-gray-50 last:border-0">
-                    <td className="px-4 py-3">
-                      <Link href={`/ownership/${h.slug}`} className="hover:underline">{h.name}</Link>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums">{formatPct(edge.pct_economic)}</td>
-                    <td className="px-4 py-3 text-gray-400">
-                      <a href={edge.source_url} className="hover:underline" target="_blank" rel="noreferrer">
-                        {edge.source_label}
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </section>
       )}
 
       {instHoldings.length > 0 && (
         <section className="mb-12">
           <h2 className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-2">Media issuers held</h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Direct 13F positions in media parents. Outlets listed are descendants of those parents — not separate holdings.
-          </p>
           <ul className="space-y-4">
             {instHoldings.map((h) => (
               <li key={h.issuer.slug} className="border border-gray-100 rounded-lg p-4">
@@ -147,10 +135,6 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
                     ))}
                   </p>
                 )}
-                <p className="text-xs text-gray-400 mt-2">
-                  <a href={h.edge.source_url} className="hover:underline" target="_blank" rel="noreferrer">{h.edge.source_label}</a>
-                  {h.edge.notes ? ` · ${h.edge.notes}` : ""}
-                </p>
               </li>
             ))}
           </ul>
@@ -191,11 +175,31 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
         </section>
       )}
 
+      {giving.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-2">Political money on this chain</h2>
+          <p className="text-sm text-gray-500 mb-4">Attributed to the giver, not to the masthead.</p>
+          <ul className="space-y-4">
+            {giving.map((g) => (
+              <li key={`${g.entity}-${g.cycle}`} className="border border-gray-100 rounded-lg p-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+                  <Link href={`/ownership/${g.entity}`} className="font-medium hover:underline">
+                    {getEntity(g.entity)?.name ?? g.entity}
+                  </Link>
+                  <span className="text-xs text-gray-400">{LAYER_LABEL[g.layer]}</span>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">{g.summary}</p>
+                <p className="text-xs text-gray-400">
+                  {g.amount_label} · <a href={g.source_url} className="hover:underline" target="_blank" rel="noreferrer">{g.source_label}</a>
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <footer className="pt-8 border-t border-gray-100 text-sm text-gray-400">
-        <p>
-          Ownership is a separate layer from journalist SPJ scores.{" "}
-          <Link href="/ownership" className="underline">All ownership →</Link>
-        </p>
+        <p>Ownership is a separate layer from journalist SPJ scores. <Link href="/ownership" className="underline">All ownership →</Link></p>
       </footer>
     </main>
   );
