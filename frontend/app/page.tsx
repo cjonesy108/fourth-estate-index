@@ -1,22 +1,19 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { JournalistSummary } from "@/lib/types";
+import { directoryMeta, mergeJournalistList } from "@/lib/directory";
 import JournalistTable from "./JournalistTable";
 
 export default async function Home() {
-  let journalists: JournalistSummary[] = [];
+  let apiRows: JournalistSummary[] | null = null;
   try {
-    journalists = await api.journalists.list();
-    // Sort: scored journalists first (highest score first), unscored last
-    journalists.sort((a, b) => {
-      if (a.composite_score === null && b.composite_score === null) return 0;
-      if (a.composite_score === null) return 1;
-      if (b.composite_score === null) return -1;
-      return b.composite_score - a.composite_score;
-    });
+    apiRows = await api.journalists.list();
   } catch {
-    // API not yet running — show empty state
+    apiRows = null;
   }
+
+  const journalists = mergeJournalistList(apiRows);
+  const meta = directoryMeta();
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-16">
@@ -61,7 +58,7 @@ export default async function Home() {
       </section>
 
       <footer className="pt-8 border-t border-gray-100 text-sm text-gray-400">
-        <p>
+        <p className="mb-2">
           Scoring methodology grounded in the{" "}
           <a
             href="https://www.spj.org/ethicscode.asp"
@@ -75,6 +72,10 @@ export default async function Home() {
           <Link href="/methodology" className="underline">
             Full methodology →
           </Link>
+        </p>
+        <p>
+          Directory v{meta.version} · {meta.as_of}. Pending rows are listed
+          journalists whose corpus is still being collected — not a score of zero.
         </p>
       </footer>
     </main>

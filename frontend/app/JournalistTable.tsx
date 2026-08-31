@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { JournalistSummary } from "@/lib/types";
+import { getDirectoryJournalist } from "@/lib/directory";
 
 type SortKey = "composite_score" | "pillar_1_score" | "pillar_2_score" | "pillar_3_score" | "pillar_4_score";
 
@@ -30,6 +31,20 @@ function ScoreCell({ score }: { score: number | null }) {
   );
 }
 
+function haystack(j: JournalistSummary): string {
+  const seeded = getDirectoryJournalist(j.slug);
+  return [
+    j.full_name,
+    j.slug,
+    j.primary_outlet,
+    j.beat,
+    ...(seeded?.aliases ?? []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
 export default function JournalistTable({
   journalists,
   hideOutletFilter = false,
@@ -42,6 +57,7 @@ export default function JournalistTable({
     return Array.from(set).sort();
   }, [journalists]);
 
+  const [query, setQuery] = useState("");
   const [outlet, setOutlet] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("composite_score");
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
@@ -56,7 +72,9 @@ export default function JournalistTable({
   };
 
   const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
     let list = outlet ? journalists.filter(j => j.primary_outlet === outlet) : journalists;
+    if (q) list = list.filter(j => haystack(j).includes(q));
     return [...list].sort((a, b) => {
       const av = a[sortKey];
       const bv = b[sortKey];
@@ -65,11 +83,25 @@ export default function JournalistTable({
       if (bv === null) return -1;
       return sortDir === "desc" ? bv - av : av - bv;
     });
-  }, [journalists, outlet, sortKey, sortDir]);
+  }, [journalists, outlet, query, sortKey, sortDir]);
 
   return (
     <div>
-      {/* Outlet filter pills */}
+      <div className="mb-4">
+        <label htmlFor="journalist-search" className="sr-only">
+          Search journalists
+        </label>
+        <input
+          id="journalist-search"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name, outlet, or beat"
+          autoComplete="off"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+        />
+      </div>
+
       {!hideOutletFilter && (
         <div className="flex flex-wrap gap-2 mb-5">
           <button
@@ -109,7 +141,6 @@ export default function JournalistTable({
         </div>
       )}
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
@@ -136,37 +167,47 @@ export default function JournalistTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {filtered.map((j, i) => (
-              <tr key={j.id} className="hover:bg-gray-50 transition-colors group">
-                <td className="py-3 pr-4">
-                  <Link href={`/journalist/${j.slug}`} className="block">
-                    <p className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {j.full_name}
-                    </p>
-                    {!outlet && (
-                      <p className="text-xs text-gray-400 mt-0.5">{j.primary_outlet}</p>
-                    )}
-                  </Link>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-10 text-center text-sm text-gray-400">
+                  {query.trim()
+                    ? `No journalists match “${query.trim()}”.`
+                    : "No journalists in this list."}
                 </td>
-                {COLUMNS.map(col => (
-                  <td key={col.key} className={`py-3 px-2 text-right ${col.key === sortKey ? "bg-gray-50/50" : ""}`}>
-                    {col.key === "composite_score" ? (
-                      <Link href={`/journalist/${j.slug}`}>
-                        {j.composite_score !== null ? (
-                          <span className={`text-base font-black tabular-nums ${scoreColor(j.composite_score)}`}>
-                            {Math.round(j.composite_score * 100)}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-gray-300 italic">pending</span>
-                        )}
-                      </Link>
-                    ) : (
-                      <ScoreCell score={j[col.key]} />
-                    )}
-                  </td>
-                ))}
               </tr>
-            ))}
+            ) : (
+              filtered.map((j) => (
+                <tr key={j.id} className="hover:bg-gray-50 transition-colors group">
+                  <td className="py-3 pr-4">
+                    <Link href={`/journalist/${j.slug}`} className="block">
+                      <p className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                        {j.full_name}
+                      </p>
+                      {!outlet && (
+                        <p className="text-xs text-gray-400 mt-0.5">{j.primary_outlet}</p>
+                      )}
+                    </Link>
+                  </td>
+                  {COLUMNS.map(col => (
+                    <td key={col.key} className={`py-3 px-2 text-right ${col.key === sortKey ? "bg-gray-50/50" : ""}`}>
+                      {col.key === "composite_score" ? (
+                        <Link href={`/journalist/${j.slug}`}>
+                          {j.composite_score !== null ? (
+                            <span className={`text-base font-black tabular-nums ${scoreColor(j.composite_score)}`}>
+                              {Math.round(j.composite_score * 100)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-300 italic">pending</span>
+                          )}
+                        </Link>
+                      ) : (
+                        <ScoreCell score={j[col.key]} />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -174,6 +215,7 @@ export default function JournalistTable({
       <p className="text-xs text-gray-400 mt-4">
         {filtered.length} journalist{filtered.length !== 1 ? "s" : ""}
         {outlet ? ` · ${outlet}` : ""}
+        {query.trim() ? ` · matching “${query.trim()}”` : ""}
         {" · "}sorted by {COLUMNS.find(c => c.key === sortKey)?.label} ({sortDir === "desc" ? "highest first" : "lowest first"})
       </p>
     </div>

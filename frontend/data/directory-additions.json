@@ -1,0 +1,29 @@
+{
+  "version": "0.3.0",
+  "as_of": "2026-08-31",
+  "outlets": [
+    {
+      "slug": "propublica",
+      "name": "ProPublica",
+      "domain": "propublica.org",
+      "api_source": "rss",
+      "access": "full_public",
+      "text_policy": "Nonprofit investigative newsroom. Stories are publicly readable.",
+      "author_url_template": "https://www.propublica.org/people/{author_slug}"
+    }
+  ],
+  "journalists": [
+    {"slug":"justin-elliott","full_name":"Justin Elliott","aliases":["Justin Elliott"],"primary_outlet":"propublica","beat":"Business / politics","directory_status":"listed","author_slug":"justin-elliott","author_url":"https://www.propublica.org/people/justin-elliott","x_handle":null},
+    {"slug":"alec-macgillis","full_name":"Alec MacGillis","aliases":["Alec MacGillis"],"primary_outlet":"propublica","beat":"Investigations","directory_status":"listed","author_slug":"alec-macgillis","author_url":"https://www.propublica.org/people/alec-macgillis","x_handle":null},
+    {"slug":"t-christian-miller","full_name":"T. Christian Miller","aliases":["T. Christian Miller","T Christian Miller"],"primary_outlet":"propublica","beat":"Investigations","directory_status":"listed","author_slug":"t-christian-miller","author_url":"https://www.propublica.org/people/t-christian-miller","x_handle":null},
+    {"slug":"paul-kiel","full_name":"Paul Kiel","aliases":["Paul Kiel"],"primary_outlet":"propublica","beat":"Business / tax","directory_status":"listed","author_slug":"paul-kiel","author_url":"https://www.propublica.org/people/paul-kiel","x_handle":null},
+    {"slug":"sharon-lerner","full_name":"Sharon Lerner","aliases":["Sharon Lerner"],"primary_outlet":"propublica","beat":"Environment / health","directory_status":"listed","author_slug":"sharon-lerner","author_url":"https://www.propublica.org/people/sharon-lerner","x_handle":null},
+    {"slug":"lizzie-presser","full_name":"Lizzie Presser","aliases":["Lizzie Presser"],"primary_outlet":"propublica","beat":"Investigations","directory_status":"listed","author_slug":"lizzie-presser","author_url":"https://www.propublica.org/people/lizzie-presser","x_handle":null},
+    {"slug":"pamela-colloff","full_name":"Pamela Colloff","aliases":["Pamela Colloff"],"primary_outlet":"propublica","beat":"Criminal justice","directory_status":"listed","author_slug":"pamela-colloff","author_url":"https://www.propublica.org/people/pamela-colloff","x_handle":null},
+    {"slug":"andy-kroll","full_name":"Andy Kroll","aliases":["Andy Kroll"],"primary_outlet":"propublica","beat":"Washington / investigations","directory_status":"listed","author_slug":"andy-kroll","author_url":"https://www.propublica.org/people/andy-kroll","x_handle":null},
+    {"slug":"hannah-allam","full_name":"Hannah Allam","aliases":["Hannah Allam"],"primary_outlet":"propublica","beat":"National security / politics","directory_status":"listed","author_slug":"hannah-allam","author_url":"https://www.propublica.org/people/hannah-allam","x_handle":null},
+    {"slug":"keri-blakinger","full_name":"Keri Blakinger","aliases":["Keri Blakinger"],"primary_outlet":"propublica","beat":"Criminal justice","directory_status":"listed","author_slug":"keri-blakinger","author_url":"https://www.propublica.org/people/keri-blakinger","x_handle":null},
+    {"slug":"joshua-kaplan","full_name":"Joshua Kaplan","aliases":["Joshua Kaplan"],"primary_outlet":"propublica","beat":"Investigations","directory_status":"listed","author_slug":"joshua-kaplan","author_url":"https://www.propublica.org/people/joshua-kaplan","x_handle":null},
+    {"slug":"cate-brown","full_name":"Cate Brown","aliases":["Cate Brown"],"primary_outlet":"propublica","beat":"Washington / national security","directory_status":"listed","author_slug":"cate-brown","author_url":"https://www.propublica.org/people/cate-brown","x_handle":null}
+  ]
+}
