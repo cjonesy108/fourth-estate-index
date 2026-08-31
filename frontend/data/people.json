@@ -1,26 +1,30 @@
 {
   "affiliations": [
     {"person": "larry-fink", "org": "blackrock", "role": "Chairman & CEO"},
-    {"person": "robert-iger", "org": "walt-disney", "role": "CEO"}
+    {"person": "salim-ramji", "org": "vanguard", "role": "CEO"},
+    {"person": "ron-ohanley", "org": "state-street", "role": "Chairman & CEO"},
+    {"person": "robert-iger", "org": "walt-disney", "role": "CEO"},
+    {"person": "lachlan-murdoch", "org": "murdoch-family", "role": "Family principal / Fox chair"},
+    {"person": "lachlan-murdoch", "org": "fox-corporation", "role": "Chair"},
+    {"person": "rupert-murdoch", "org": "murdoch-family", "role": "Family patriarch"},
+    {"person": "brian-roberts", "org": "roberts-family", "role": "Class B holder"},
+    {"person": "brian-roberts", "org": "comcast", "role": "Chairman"},
+    {"person": "ag-sulzberger", "org": "ochs-sulzberger-family", "role": "Publisher / family principal"},
+    {"person": "ag-sulzberger", "org": "nytimes-company", "role": "Publisher & chairman"},
+    {"person": "david-ellison", "org": "ellison-family", "role": "Paramount Skydance CEO"},
+    {"person": "larry-ellison", "org": "ellison-family", "role": "Voting-control principal"},
+    {"person": "david-ellison", "org": "paramount-skydance", "role": "Chair & CEO"}
   ],
   "entities": [
-    {
-      "slug": "larry-fink",
-      "name": "Larry Fink",
-      "type": "individual",
-      "is_outlet": false,
-      "ticker": null,
-      "control_summary": "CEO of BlackRock. Not a media controller. Personal FEC giving is separate from BlackRock PAC and is not attributed to CNN or any WBD title.",
-      "notes": "Officer of an institutional holder, not an owner of newsrooms."
-    },
-    {
-      "slug": "robert-iger",
-      "name": "Robert Iger",
-      "type": "individual",
-      "is_outlet": false,
-      "ticker": null,
-      "control_summary": "CEO of Disney. Hired executive, not a dual-class controller. Personal giving is separate from Disney PAC and from ABC News.",
-      "notes": null
-    }
+    {"slug":"larry-fink","name":"Larry Fink","type":"individual","is_outlet":false,"ticker":null,"control_summary":"CEO of BlackRock. Economic power through the institution's 13F book, not voting control of any newsroom.","notes":"Click through from BlackRock. Not attached to CNN by default."},
+    {"slug":"salim-ramji","name":"Salim Ramji","type":"individual","is_outlet":false,"ticker":null,"control_summary":"CEO of Vanguard. Same structure as Fink: officer of an index manager, not a dual-class media controller.","notes":null},
+    {"slug":"ron-ohanley","name":"Ron O'Hanley","type":"individual","is_outlet":false,"ticker":null,"control_summary":"Chairman and CEO of State Street. Officer of an institutional holder.","notes":null},
+    {"slug":"robert-iger","name":"Robert Iger","type":"individual","is_outlet":false,"ticker":null,"control_summary":"CEO of Disney. Hired executive. No dual-class lock on ABC News.","notes":null},
+    {"slug":"lachlan-murdoch","name":"Lachlan Murdoch","type":"individual","is_outlet":false,"ticker":null,"control_summary":"Chair of Fox and the operating principal of the Murdoch family voting block.","notes":null},
+    {"slug":"rupert-murdoch","name":"Rupert Murdoch","type":"individual","is_outlet":false,"ticker":null,"control_summary":"Patriarch of the Murdoch family trusts that vote Fox and News Corp Class B.","notes":null},
+    {"slug":"brian-roberts","name":"Brian Roberts","type":"individual","is_outlet":false,"ticker":null,"control_summary":"Holds Comcast Class B. Charter locks that class at one-third of voting power.","notes":null},
+    {"slug":"ag-sulzberger","name":"A.G. Sulzberger","type":"individual","is_outlet":false,"ticker":null,"control_summary":"Publisher and chairman of The New York Times Company. Family Class B elects a majority of the board.","notes":null},
+    {"slug":"david-ellison","name":"David Ellison","type":"individual","is_outlet":false,"ticker":null,"control_summary":"Chair and CEO of Paramount Skydance. Family holds 77.5% of voting Class A. Not yet owner of CNN.","notes":null},
+    {"slug":"larry-ellison","name":"Larry Ellison","type":"individual","is_outlet":false,"ticker":null,"control_summary":"Voting-control principal of Paramount Skydance alongside David Ellison.","notes":null}
   ]
 }
