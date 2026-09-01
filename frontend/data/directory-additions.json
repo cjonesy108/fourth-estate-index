@@ -1,6 +1,6 @@
 {
-  "version": "0.3.0",
-  "as_of": "2026-08-31",
+  "version": "0.3.1",
+  "as_of": "2026-09-01",
   "outlets": [
     {
       "slug": "propublica",
@@ -10,6 +10,15 @@
       "access": "full_public",
       "text_policy": "Nonprofit investigative newsroom. Stories are publicly readable.",
       "author_url_template": "https://www.propublica.org/people/{author_slug}"
+    },
+    {
+      "slug": "npr",
+      "name": "NPR",
+      "domain": "npr.org",
+      "api_source": "npr",
+      "access": "full_public",
+      "text_policy": "Most text stories are publicly readable. API/RSS first, no login.",
+      "author_url_template": "https://www.npr.org/people/{author_slug}"
     }
   ],
   "journalists": [
@@ -24,6 +33,7 @@
     {"slug":"hannah-allam","full_name":"Hannah Allam","aliases":["Hannah Allam"],"primary_outlet":"propublica","beat":"National security / politics","directory_status":"listed","author_slug":"hannah-allam","author_url":"https://www.propublica.org/people/hannah-allam","x_handle":null},
     {"slug":"keri-blakinger","full_name":"Keri Blakinger","aliases":["Keri Blakinger"],"primary_outlet":"propublica","beat":"Criminal justice","directory_status":"listed","author_slug":"keri-blakinger","author_url":"https://www.propublica.org/people/keri-blakinger","x_handle":null},
     {"slug":"joshua-kaplan","full_name":"Joshua Kaplan","aliases":["Joshua Kaplan"],"primary_outlet":"propublica","beat":"Investigations","directory_status":"listed","author_slug":"joshua-kaplan","author_url":"https://www.propublica.org/people/joshua-kaplan","x_handle":null},
-    {"slug":"cate-brown","full_name":"Cate Brown","aliases":["Cate Brown"],"primary_outlet":"propublica","beat":"Washington / national security","directory_status":"listed","author_slug":"cate-brown","author_url":"https://www.propublica.org/people/cate-brown","x_handle":null}
+    {"slug":"cate-brown","full_name":"Cate Brown","aliases":["Cate Brown"],"primary_outlet":"propublica","beat":"Washington / national security","directory_status":"listed","author_slug":"cate-brown","author_url":"https://www.propublica.org/people/cate-brown","x_handle":null},
+    {"slug":"jaclyn-diaz","full_name":"Jaclyn Diaz","aliases":["Jaclyn Diaz"],"primary_outlet":"npr","beat":"Newshub / criminal justice","directory_status":"listed","author_slug":"930959243/jaclyn-diaz","author_url":"https://www.npr.org/people/930959243/jaclyn-diaz","x_handle":null}
   ]
 }
