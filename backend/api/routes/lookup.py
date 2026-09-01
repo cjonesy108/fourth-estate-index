@@ -11,7 +11,8 @@ from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 
 from fastapi import APIRouter, Query
 
-from backend.database.queries import get_conn, lookup_article_and_journalists
+from backend.database.queries import get_conn
+from backend.database.queries_lookup import lookup_article_and_journalists
 
 router = APIRouter()
 
