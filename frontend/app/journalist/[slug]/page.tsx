@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
 import { api } from "@/lib/api";
-import { JournalistProfile } from "@/lib/types";
+import { AnalysisSample, JournalistProfile } from "@/lib/types";
 import {
   directoryProfile,
   getDirectoryJournalist,
@@ -33,6 +33,105 @@ function ScoreBar({ score }: { score: number | null }) {
         <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
+  );
+}
+
+function formatDay(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function sampleLabel(type: string): string {
+  const labels: Record<string, string> = {
+    headline_fidelity: "Headline fidelity",
+    attribution_patterns: "Attribution",
+    language_patterns: "Language patterns",
+    source_diversity: "Source diversity",
+    social_media_independence: "Social posts",
+  };
+  return labels[type] || type.replace(/_/g, " ");
+}
+
+function BodyOfWork({
+  profile,
+  recentCount,
+}: {
+  profile: JournalistProfile;
+  recentCount: number;
+}) {
+  const stored = profile.corpus_size ?? 0;
+  const full = profile.corpus_full_text ?? null;
+  const excerpt = profile.corpus_excerpt ?? null;
+  const metadata = profile.corpus_metadata ?? null;
+  const samples = profile.analysis_samples ?? [];
+  const scoredFrom = samples.length
+    ? Math.max(...samples.map((s) => s.corpus_size ?? 0))
+    : profile.pillar_scores?.corpus_size ?? null;
+
+  return (
+    <section className="mb-12">
+      <h2 className="text-xl font-semibold mb-4">Body of work</h2>
+      <div className="border border-gray-200 rounded-lg p-5 space-y-4">
+        {stored > 0 ? (
+          <>
+            <p className="text-sm text-gray-700">
+              {stored} article{stored === 1 ? "" : "s"} stored in the scoring warehouse
+              {profile.corpus_start && profile.corpus_end ? (
+                <>
+                  {" "}· {formatDay(profile.corpus_start)} to {formatDay(profile.corpus_end)}
+                </>
+              ) : null}
+            </p>
+            {full !== null && (
+              <p className="text-sm text-gray-500">
+                {full} full text
+                {excerpt ? ` · ${excerpt} excerpt` : ""}
+                {metadata ? ` · ${metadata} metadata only` : ""}
+              </p>
+            )}
+            {profile.composite_score !== null || profile.pillar_scores ? (
+              <p className="text-sm text-gray-500">
+                {scoredFrom
+                  ? `The published score used the most recent ${scoredFrom} full-text stories, not every stored row.`
+                  : "The published score used a recent full-text sample, not every stored row."}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-500">
+                Articles are stored. No score is published until minimum thresholds are met.
+              </p>
+            )}
+            {samples.length > 0 && (
+              <ul className="text-xs text-gray-400 space-y-1 pt-2 border-t border-gray-100">
+                {samples.map((s: AnalysisSample) => (
+                  <li key={s.analysis_type}>
+                    {sampleLabel(s.analysis_type)}
+                    {s.corpus_size != null ? ` · ${s.corpus_size} stories` : ""}
+                    {s.scored_at ? ` · ${formatDay(s.scored_at)}` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-gray-700">No full-text corpus in the scoring warehouse yet.</p>
+            <p className="text-sm text-gray-500">
+              {recentCount > 0
+                ? `${recentCount} recent byline${recentCount === 1 ? "" : "s"} below come from the publisher’s public feed. Those links are work product, not scored text.`
+                : "This person is listed in the directory. Scoring waits on licensed or openly published full text."}
+            </p>
+          </>
+        )}
+        <p className="text-xs text-gray-400">
+          Excerpt and metadata rows count as inventory. Only full text enters attribution, language, and source-diversity scoring.{" "}
+          <Link href="/methodology" className="text-blue-600 hover:underline">
+            Methodology →
+          </Link>
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -113,20 +212,9 @@ export default async function JournalistPage({
             </a>
           )}
         </div>
-        <div className="text-xs text-gray-400 space-y-1">
-          {profile.corpus_size ? (
-            <p>
-              {profile.corpus_size} articles analyzed ·{" "}
-              {profile.corpus_start?.slice(0, 10)} to{" "}
-              {profile.corpus_end?.slice(0, 10)}
-            </p>
-          ) : work.length > 0 ? (
-            <p>Recent bylines from the publisher. Full-text scoring still collecting.</p>
-          ) : (
-            <p>Listed in the directory. Full-text corpus still collecting.</p>
-          )}
-        </div>
       </header>
+
+      <BodyOfWork profile={profile} recentCount={work.length} />
 
       {work.length > 0 && (
         <section className="mb-12">

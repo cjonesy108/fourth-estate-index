@@ -25,6 +25,13 @@ export interface PillarScores {
   methodology_version: string;
   scored_at: string;
   score_narrative: Record<string, string> | null;
+  corpus_size?: number | null;
+}
+
+export interface AnalysisSample {
+  analysis_type: string;
+  corpus_size: number | null;
+  scored_at: string | null;
 }
 
 export interface FECRecord {
@@ -90,7 +97,11 @@ export interface JournalistProfile extends JournalistSummary {
   corrections: Correction[];
   appeals: Appeal[];
   corpus_size: number | null;
+  corpus_full_text?: number | null;
+  corpus_excerpt?: number | null;
+  corpus_metadata?: number | null;
   corpus_start: string | null;
   corpus_end: string | null;
+  analysis_samples?: AnalysisSample[];
   methodology_version: string | null;
 }

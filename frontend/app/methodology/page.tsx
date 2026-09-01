@@ -68,6 +68,21 @@ export default async function MethodologyPage() {
       </section>
 
       <section className="mb-10">
+        <h2 className="text-2xl font-semibold mb-4">What a score is computed from</h2>
+        <p className="text-gray-600 leading-relaxed mb-4">
+          Each profile now separates three things that used to look like one number:
+          the journalist listed in the directory, the articles stored in the warehouse,
+          and the smaller sample actually sent to the scorer.
+        </p>
+        <p className="text-gray-600 leading-relaxed mb-4">
+          Headline checks use up to the 50 most recent full-text stories. Attribution
+          uses up to 25. Language patterns use up to 30. Source diversity uses up to 15.
+          If a reporter has 400 Guardian pieces stored, the composite is still a recent
+          sample — and the profile says so.
+        </p>
+      </section>
+
+      <section className="mb-10">
         <h2 className="text-2xl font-semibold mb-4">Why The Guardian First</h2>
         <p className="text-gray-600 leading-relaxed">
           The Guardian Open Platform gives licensed full text. Next full-text

@@ -71,7 +71,6 @@ async def list_outlets(conn) -> list[dict]:
 
 
 async def get_outlet_profile(conn, slug: str) -> Optional[dict]:
-    # Pull all outlets and find the one matching the slug
     outlets = await list_outlets(conn)
     outlet = next((o for o in outlets if o["slug"] == slug), None)
     if not outlet:
@@ -113,6 +112,61 @@ async def get_outlet_profile(conn, slug: str) -> Optional[dict]:
     }
 
 
+async def _corpus_inventory(conn, jid) -> dict:
+    try:
+        row = await conn.fetchrow(
+            """
+            SELECT
+                COUNT(*)::int AS size,
+                COUNT(*) FILTER (
+                    WHERE body IS NOT NULL AND COALESCE(access_level, 'full') = 'full'
+                )::int AS full_text,
+                COUNT(*) FILTER (WHERE access_level = 'excerpt')::int AS excerpt,
+                COUNT(*) FILTER (WHERE access_level = 'metadata')::int AS metadata,
+                MIN(published_at) AS start,
+                MAX(published_at) AS end
+            FROM articles
+            WHERE journalist_id = $1
+            """,
+            jid,
+        )
+    except Exception:
+        row = await conn.fetchrow(
+            """
+            SELECT
+                COUNT(*)::int AS size,
+                COUNT(*) FILTER (WHERE body IS NOT NULL)::int AS full_text,
+                0::int AS excerpt,
+                0::int AS metadata,
+                MIN(published_at) AS start,
+                MAX(published_at) AS end
+            FROM articles
+            WHERE journalist_id = $1
+            """,
+            jid,
+        )
+    if not row:
+        return {"size": 0, "full_text": 0, "excerpt": 0, "metadata": 0, "start": None, "end": None}
+    return dict(row)
+
+
+async def _analysis_samples(conn, jid) -> list[dict]:
+    try:
+        rows = await conn.fetch(
+            """
+            SELECT DISTINCT ON (analysis_type)
+                analysis_type, corpus_size, scored_at
+            FROM analysis_results
+            WHERE journalist_id = $1
+            ORDER BY analysis_type, scored_at DESC
+            """,
+            jid,
+        )
+    except Exception:
+        return []
+    return [dict(r) for r in rows]
+
+
 async def get_journalist_profile(conn, slug: str) -> Optional[dict]:
     journalist = await conn.fetchrow(
         "SELECT * FROM journalists WHERE slug = $1 AND data_status != 'paused'", slug
@@ -146,17 +200,11 @@ async def get_journalist_profile(conn, slug: str) -> Optional[dict]:
         jid,
     )
 
-    corpus = await conn.fetchrow(
-        """
-        SELECT COUNT(*) as size, MIN(published_at) as start, MAX(published_at) as end
-        FROM articles WHERE journalist_id = $1
-        """,
-        jid,
-    )
+    corpus = await _corpus_inventory(conn, jid)
+    samples = await _analysis_samples(conn, jid)
 
     scores_dict = dict(scores) if scores else None
     if scores_dict and scores_dict.get("score_narrative"):
-        # asyncpg returns JSONB as a string — parse it
         if isinstance(scores_dict["score_narrative"], str):
             import json
             scores_dict["score_narrative"] = json.loads(scores_dict["score_narrative"])
@@ -167,7 +215,11 @@ async def get_journalist_profile(conn, slug: str) -> Optional[dict]:
         "fec_records": [dict(r) for r in fec],
         "corrections": [dict(r) for r in corrections],
         "appeals": [dict(r) for r in appeals],
-        "corpus_size": corpus["size"] if corpus else 0,
-        "corpus_start": corpus["start"] if corpus else None,
-        "corpus_end": corpus["end"] if corpus else None,
+        "corpus_size": corpus.get("size") or 0,
+        "corpus_full_text": corpus.get("full_text") or 0,
+        "corpus_excerpt": corpus.get("excerpt") or 0,
+        "corpus_metadata": corpus.get("metadata") or 0,
+        "corpus_start": corpus.get("start"),
+        "corpus_end": corpus.get("end"),
+        "analysis_samples": samples,
     }
