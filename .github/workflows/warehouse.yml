@@ -1,0 +1,83 @@
+name: Warehouse
+
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "What to run"
+        required: true
+        default: "status"
+        type: choice
+        options:
+          - status
+          - score-propublica-one
+          - score-propublica-all
+      slug:
+        description: "Journalist slug for score-propublica-one (default justin-elliott)"
+        required: false
+        default: "justin-elliott"
+
+jobs:
+  warehouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install asyncpg anthropic httpx tenacity python-dotenv pydantic
+
+      - name: Check secrets
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Missing GitHub secret DATABASE_URL"
+            echo "Copy it from Railway → your Postgres service → Variables."
+            exit 1
+          fi
+          if [ "${{ github.event.inputs.job }}" != "status" ] && [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "Missing GitHub secret ANTHROPIC_API_KEY"
+            exit 1
+          fi
+          echo "Secrets present."
+
+      - name: Apply schema patch and seed roster
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          PYTHONPATH=. python3 scripts/apply_article_access.py
+          PYTHONPATH=. python3 scripts/seed_directory.py
+
+      - name: Warehouse status
+        if: ${{ github.event.inputs.job == 'status' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: PYTHONPATH=. python3 scripts/warehouse_status.py
+
+      - name: Score one ProPublica journalist
+        if: ${{ github.event.inputs.job == 'score-propublica-one' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          SLUG="${{ github.event.inputs.slug }}"
+          SLUG="${SLUG:-justin-elliott}"
+          PYTHONPATH=. python3 scripts/run_propublica_cohort.py "$SLUG"
+          PYTHONPATH=. python3 scripts/warehouse_status.py
+
+      - name: Score all ProPublica journalists
+        if: ${{ github.event.inputs.job == 'score-propublica-all' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          PYTHONPATH=. python3 scripts/run_propublica_cohort.py
+          PYTHONPATH=. python3 scripts/warehouse_status.py
