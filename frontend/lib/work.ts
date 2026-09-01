@@ -4,7 +4,7 @@ export interface WorkItem {
   published_at: string | null;
 }
 
-const UA = "FourthEstateIndex/0.3 (+https://fourth-estate-index.vercel.app)";
+const UA = "FourthEstateIndex/0.4 (+https://fourth-estate-index.vercel.app)";
 
 function decode(html: string): string {
   return html
@@ -102,9 +102,20 @@ function parseProPublicaPeople(html: string, limit: number): WorkItem[] {
 export function feedUrlFor(j: {
   feed_url?: string | null;
   guardian_tag?: string | null;
+  author_url?: string | null;
 }): string | null {
   if (j.feed_url) return j.feed_url;
   if (j.guardian_tag) return `https://www.theguardian.com/${j.guardian_tag}/rss`;
+  const author = j.author_url || "";
+  if (author.includes("texastribune.org/author/")) {
+    return author.replace(/\/?$/, "/") + "feed/";
+  }
+  if (author.includes("nypost.com/author/")) {
+    return author.replace(/\/?$/, "/") + "feed/";
+  }
+  if (author.includes("washingtonexaminer.com/author/")) {
+    return author.replace(/\/?$/, "/") + "feed/";
+  }
   return null;
 }
 

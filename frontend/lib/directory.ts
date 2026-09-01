@@ -41,15 +41,17 @@ interface DirectoryFile {
   journalists: DirectoryJournalist[];
 }
 
+const LIVE_OUTLETS = new Set(["propublica", "texas-tribune"]);
+
 const base = raw as DirectoryFile;
 const extra = additions as { outlets?: DirectoryOutlet[]; journalists?: DirectoryJournalist[] };
 
 const extraOutletSlugs = new Set((extra.outlets ?? []).map((o) => o.slug));
 const outlets: DirectoryOutlet[] = [
   ...base.outlets.filter((o) => !extraOutletSlugs.has(o.slug)).map((o) =>
-    o.slug === "propublica" ? { ...o, queued: false } : o
+    LIVE_OUTLETS.has(o.slug) ? { ...o, queued: false } : o
   ),
-  ...(extra.outlets ?? []),
+  ...(extra.outlets ?? []).map((o) => ({ ...o, queued: false })),
 ];
 const journalists: DirectoryJournalist[] = [
   ...base.journalists,

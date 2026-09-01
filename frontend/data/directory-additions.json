@@ -1,15 +1,25 @@
 {
-  "version": "0.3.0",
-  "as_of": "2026-08-31",
+  "version": "0.4.0",
+  "as_of": "2026-09-01",
   "outlets": [
     {
       "slug": "propublica",
       "name": "ProPublica",
       "domain": "propublica.org",
-      "api_source": "rss",
+      "api_source": "propublica",
       "access": "full_public",
-      "text_policy": "Nonprofit investigative newsroom. Stories are publicly readable.",
+      "text_policy": "Nonprofit investigative newsroom. Stories are publicly readable. WordPress REST API supplies full text.",
       "author_url_template": "https://www.propublica.org/people/{author_slug}"
+    },
+    {
+      "slug": "texas-tribune",
+      "name": "The Texas Tribune",
+      "domain": "texastribune.org",
+      "api_source": "texastribune",
+      "access": "full_public",
+      "text_policy": "Nonprofit public-service newsroom. Author RSS at /author/{slug}/feed/ and WordPress REST API supply public full text. No login.",
+      "author_url_template": "https://www.texastribune.org/author/{author_slug}/",
+      "corrections_url": "https://www.texastribune.org/series/corrections/"
     }
   ],
   "journalists": [
@@ -24,6 +34,18 @@
     {"slug":"hannah-allam","full_name":"Hannah Allam","aliases":["Hannah Allam"],"primary_outlet":"propublica","beat":"National security / politics","directory_status":"listed","author_slug":"hannah-allam","author_url":"https://www.propublica.org/people/hannah-allam","x_handle":null},
     {"slug":"keri-blakinger","full_name":"Keri Blakinger","aliases":["Keri Blakinger"],"primary_outlet":"propublica","beat":"Criminal justice","directory_status":"listed","author_slug":"keri-blakinger","author_url":"https://www.propublica.org/people/keri-blakinger","x_handle":null},
     {"slug":"joshua-kaplan","full_name":"Joshua Kaplan","aliases":["Joshua Kaplan"],"primary_outlet":"propublica","beat":"Investigations","directory_status":"listed","author_slug":"joshua-kaplan","author_url":"https://www.propublica.org/people/joshua-kaplan","x_handle":null},
-    {"slug":"cate-brown","full_name":"Cate Brown","aliases":["Cate Brown"],"primary_outlet":"propublica","beat":"Washington / national security","directory_status":"listed","author_slug":"cate-brown","author_url":"https://www.propublica.org/people/cate-brown","x_handle":null}
+    {"slug":"cate-brown","full_name":"Cate Brown","aliases":["Cate Brown"],"primary_outlet":"propublica","beat":"Washington / national security","directory_status":"listed","author_slug":"cate-brown","author_url":"https://www.propublica.org/people/cate-brown","x_handle":null},
+    {"slug":"eleanor-klibanoff","full_name":"Eleanor Klibanoff","aliases":["Eleanor Klibanoff"],"primary_outlet":"texas-tribune","beat":"Law and politics","directory_status":"listed","author_slug":"eleanor-klibanoff","author_url":"https://www.texastribune.org/author/eleanor-klibanoff/","feed_url":"https://www.texastribune.org/author/eleanor-klibanoff/feed/","x_handle":null},
+    {"slug":"kayla-guo","full_name":"Kayla Guo","aliases":["Kayla Guo"],"primary_outlet":"texas-tribune","beat":"Politics","directory_status":"listed","author_slug":"kayla-guo","author_url":"https://www.texastribune.org/author/kayla-guo/","feed_url":"https://www.texastribune.org/author/kayla-guo/feed/","x_handle":null},
+    {"slug":"alejandro-serrano","full_name":"Alejandro Serrano","aliases":["Alejandro Serrano"],"primary_outlet":"texas-tribune","beat":"Politics","directory_status":"listed","author_slug":"alejandro-serrano","author_url":"https://www.texastribune.org/author/alejandro-serrano/","feed_url":"https://www.texastribune.org/author/alejandro-serrano/feed/","x_handle":null},
+    {"slug":"gabby-birenbaum","full_name":"Gabby Birenbaum","aliases":["Gabby Birenbaum"],"primary_outlet":"texas-tribune","beat":"Washington","directory_status":"listed","author_slug":"gabby-birenbaum","author_url":"https://www.texastribune.org/author/gabby-birenbaum/","feed_url":"https://www.texastribune.org/author/gabby-birenbaum/feed/","x_handle":null},
+    {"slug":"emily-foxhall","full_name":"Emily Foxhall","aliases":["Emily Foxhall"],"primary_outlet":"texas-tribune","beat":"Climate","directory_status":"listed","author_slug":"emily-foxhall","author_url":"https://www.texastribune.org/author/emily-foxhall/","feed_url":"https://www.texastribune.org/author/emily-foxhall/feed/","x_handle":null},
+    {"slug":"uriel-j-garcia","full_name":"Uriel J. Garc\u00eda","aliases":["Uriel J. Garc\u00eda","Uriel Garcia","Uriel J. Garcia"],"primary_outlet":"texas-tribune","beat":"Immigration","directory_status":"listed","author_slug":"uriel-j-garcia","author_url":"https://www.texastribune.org/author/uriel-j-garcia/","feed_url":"https://www.texastribune.org/author/uriel-j-garcia/feed/","x_handle":null},
+    {"slug":"lomi-kriel","full_name":"Lomi Kriel","aliases":["Lomi Kriel"],"primary_outlet":"texas-tribune","beat":"Investigations","directory_status":"listed","author_slug":"lomi-kriel","author_url":"https://www.texastribune.org/author/lomi-kriel/","feed_url":"https://www.texastribune.org/author/lomi-kriel/feed/","x_handle":null},
+    {"slug":"perla-trevizo","full_name":"Perla Trevizo","aliases":["Perla Trevizo"],"primary_outlet":"texas-tribune","beat":"Investigations \u00b7 ProPublica unit","directory_status":"listed","author_slug":"perla-trevizo","author_url":"https://www.texastribune.org/author/perla-trevizo/","feed_url":"https://www.texastribune.org/author/perla-trevizo/feed/","x_handle":null},
+    {"slug":"jeremy-schwartz","full_name":"Jeremy Schwartz","aliases":["Jeremy Schwartz"],"primary_outlet":"texas-tribune","beat":"Investigations \u00b7 ProPublica unit","directory_status":"listed","author_slug":"jeremy-schwartz","author_url":"https://www.texastribune.org/author/jeremy-schwartz/","feed_url":"https://www.texastribune.org/author/jeremy-schwartz/feed/","x_handle":null},
+    {"slug":"alejandra-martinez","full_name":"Alejandra Martinez","aliases":["Alejandra Martinez"],"primary_outlet":"texas-tribune","beat":"Environment","directory_status":"listed","author_slug":"alejandra-martinez","author_url":"https://www.texastribune.org/author/alejandra-martinez/","feed_url":"https://www.texastribune.org/author/alejandra-martinez/feed/","x_handle":null},
+    {"slug":"paul-cobler","full_name":"Paul Cobler","aliases":["Paul Cobler"],"primary_outlet":"texas-tribune","beat":"Economy","directory_status":"listed","author_slug":"paul-cobler","author_url":"https://www.texastribune.org/author/paul-cobler/","feed_url":"https://www.texastribune.org/author/paul-cobler/feed/","x_handle":null},
+    {"slug":"megan-menchaca","full_name":"Megan Menchaca","aliases":["Megan Menchaca"],"primary_outlet":"texas-tribune","beat":"K-12 education","directory_status":"listed","author_slug":"megan-menchaca","author_url":"https://www.texastribune.org/author/megan-menchaca/","feed_url":"https://www.texastribune.org/author/megan-menchaca/feed/","x_handle":null}
   ]
 }
