@@ -154,8 +154,12 @@ export function directoryProfile(slug: string): JournalistProfile | null {
     corrections: [],
     appeals: [],
     corpus_size: null,
+    corpus_full_text: null,
+    corpus_excerpt: null,
+    corpus_metadata: null,
     corpus_start: null,
     corpus_end: null,
+    analysis_samples: [],
     methodology_version: null,
   };
 }
