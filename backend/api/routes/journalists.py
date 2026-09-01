@@ -19,7 +19,6 @@ async def list_journalists_route(
         journalists = await list_journalists(conn)
         if scored_only:
             journalists = [j for j in journalists if j.get("composite_score") is not None]
-        # Convert UUIDs and decimals to JSON-serializable types
         return [_serialize(j) for j in journalists]
     finally:
         await conn.close()
@@ -39,9 +38,9 @@ async def get_journalist_route(slug: str):
 
 def _serialize(row: dict) -> dict:
     return {
-        k: str(v) if hasattr(v, "hex") else  # UUID
-           float(v) if hasattr(v, "__round__") and not isinstance(v, (int, float, bool)) else  # Decimal
-           v.isoformat() if hasattr(v, "isoformat") else  # datetime
+        k: str(v) if hasattr(v, "hex") else
+           float(v) if hasattr(v, "__round__") and not isinstance(v, (int, float, bool)) else
+           v.isoformat() if hasattr(v, "isoformat") else
            v
         for k, v in row.items()
     }
@@ -50,6 +49,7 @@ def _serialize(row: dict) -> dict:
 def _serialize_profile(profile: dict) -> dict:
     j = _serialize(profile["journalist"])
     s = _serialize(profile["scores"]) if profile["scores"] else None
+    samples = [_serialize(row) for row in profile.get("analysis_samples") or []]
 
     return {
         "id": j["id"],
@@ -64,8 +64,12 @@ def _serialize_profile(profile: dict) -> dict:
         "corrections": [_serialize(r) for r in profile["corrections"]],
         "appeals": [_serialize(r) for r in profile["appeals"]],
         "corpus_size": profile["corpus_size"],
+        "corpus_full_text": profile.get("corpus_full_text"),
+        "corpus_excerpt": profile.get("corpus_excerpt"),
+        "corpus_metadata": profile.get("corpus_metadata"),
         "corpus_start": profile["corpus_start"].isoformat() if profile["corpus_start"] else None,
         "corpus_end": profile["corpus_end"].isoformat() if profile["corpus_end"] else None,
+        "analysis_samples": samples,
         "methodology_version": s.get("methodology_version") if s else None,
         "composite_score": s.get("composite_score") if s else None,
         "scored_at": s.get("scored_at") if s else None,
