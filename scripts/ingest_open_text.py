@@ -4,7 +4,8 @@ Fetch public full text into the warehouse. Does not call any model.
 Usage:
     PYTHONPATH=. python3 scripts/ingest_open_text.py propublica
     PYTHONPATH=. python3 scripts/ingest_open_text.py texastribune
-    PYTHONPATH=. python3 scripts/ingest_open_text.py propublica justin-elliott
+    PYTHONPATH=. python3 scripts/ingest_open_text.py npr
+    PYTHONPATH=. python3 scripts/ingest_open_text.py npr jaclyn-diaz
 """
 
 import asyncio
@@ -25,12 +26,13 @@ from backend.database.db import (
     save_journalist,
     save_publication,
 )
+from backend.ingestion.npr_ingestion import NPRIngester
 from backend.ingestion.propublica_ingestion import ProPublicaIngester
 from backend.ingestion.texastribune_ingestion import TexasTribuneIngester
 
 ROOT = Path(__file__).resolve().parents[1]
 DATE_FROM = datetime(2023, 1, 1)
-DATE_TO = datetime(2026, 9, 1)
+DATE_TO = datetime(2026, 9, 13)
 
 OUTLETS = {
     "propublica": {
@@ -46,6 +48,13 @@ OUTLETS = {
         "api_source": "texastribune",
         "slug": "texas-tribune",
         "ingester": TexasTribuneIngester,
+    },
+    "npr": {
+        "name": "NPR",
+        "domain": "npr.org",
+        "api_source": "npr",
+        "slug": "npr",
+        "ingester": NPRIngester,
     },
 }
 
@@ -105,7 +114,7 @@ async def ingest_one(conn, pub_id: str, spec: dict, journalist: dict):
 
 async def main():
     if len(sys.argv) < 2 or sys.argv[1] not in OUTLETS:
-        print("Usage: ingest_open_text.py propublica|texastribune [slug]")
+        print("Usage: ingest_open_text.py propublica|texastribune|npr [slug]")
         sys.exit(1)
     key = sys.argv[1]
     slug_filter = sys.argv[2] if len(sys.argv) > 2 else None
