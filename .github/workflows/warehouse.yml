@@ -12,6 +12,7 @@ on:
           - status
           - ingest-propublica
           - ingest-tribune
+          - ingest-npr
           - score-propublica-one
           - score-propublica-all
       slug:
@@ -82,6 +83,14 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           PYTHONPATH=. python3 scripts/ingest_open_text.py texastribune
+          PYTHONPATH=. python3 scripts/warehouse_status.py
+
+      - name: Ingest NPR (no model)
+        if: ${{ github.event.inputs.job == 'ingest-npr' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          PYTHONPATH=. python3 scripts/ingest_open_text.py npr
           PYTHONPATH=. python3 scripts/warehouse_status.py
 
       - name: Score one ProPublica journalist
