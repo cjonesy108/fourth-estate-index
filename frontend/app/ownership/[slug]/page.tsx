@@ -12,6 +12,8 @@ import {
   controllerHoldings,
   descendantOutlets,
   economicHolders,
+  formatAsOf,
+  formatAsOfRange,
   formatPct,
   getEntity,
   getGraph,
@@ -39,7 +41,6 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
   const entity = getEntity(params.slug);
   if (!entity) notFound();
 
-  const graph = getGraph();
   const chain = entity.is_outlet ? controlChain(entity.slug) : [];
   const parent = entity.is_outlet ? publicParent(entity.slug) : entity.type === "public_issuer" ? entity : undefined;
   const holders = parent ? economicHolders(parent.slug) : economicHolders(entity.slug);
@@ -163,13 +164,14 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
         <section className="mb-12">
           <h2 className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-2">Economic stake</h2>
           <p className="text-sm text-gray-500 mb-4">
-            Institutional holders of {parent ? parent.name : entity.name}{parent?.ticker ? ` (${parent.ticker})` : ""}. Not controllers. As of {graph.as_of_economic}. Click a holder to open its officers.
+            Institutional holders of {parent ? parent.name : entity.name}{parent?.ticker ? ` (${parent.ticker})` : ""}. Not controllers. 13F as of {formatAsOfRange(holders.map((h) => h.edge))}. Click a holder to open its officers.
           </p>
           <table className="w-full text-sm border border-gray-100 rounded-lg">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100">
                 <th className="px-4 py-3 font-medium">Holder</th>
                 <th className="px-4 py-3 font-medium">Economic</th>
+                <th className="px-4 py-3 font-medium">As of</th>
                 <th className="px-4 py-3 font-medium">People</th>
               </tr>
             </thead>
@@ -180,6 +182,7 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
                   <tr key={h.slug} className="border-b border-gray-50 last:border-0">
                     <td className="px-4 py-3"><Link href={`/ownership/${h.slug}`} className="hover:underline">{h.name}</Link></td>
                     <td className="px-4 py-3 tabular-nums">{formatPct(edge.pct_economic)}</td>
+                    <td className="px-4 py-3 text-xs text-gray-400 tabular-nums">{formatAsOf(edge.as_of)}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs">
                       {people.length === 0
                         ? "—"
@@ -210,6 +213,7 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
                   </Link>
                   <span className="tabular-nums font-medium">{formatPct(h.edge.pct_economic)}</span>
                 </div>
+                <p className="text-xs text-gray-400 mt-1">13F as of {formatAsOf(h.edge.as_of)}</p>
                 {h.outlets.length > 0 && (
                   <p className="text-sm text-gray-500 mt-2">
                     {h.outlets.map((o, i) => (
