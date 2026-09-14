@@ -36,6 +36,18 @@ export default async function Home() {
         </p>
       </header>
 
+      <section className="mb-12 border border-gray-200 rounded-lg p-6">
+        <h2 className="text-2xl font-semibold mb-2">Browser extension</h2>
+        <p className="text-gray-600 leading-relaxed mb-4">
+          See the article and journalist scores on the page you are reading.
+          Pending is not a zero. Chrome Web Store is not live yet — install
+          takes a ZIP and Load unpacked.
+        </p>
+        <Link href="/extension" className="text-blue-600 hover:underline text-sm font-medium">
+          Download the extension →
+        </Link>
+      </section>
+
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold">Journalists</h2>

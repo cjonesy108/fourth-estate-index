@@ -17,6 +17,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               Fourth Estate Index
             </Link>
             <div className="flex items-center gap-6">
+              <Link href="/extension" className="text-sm text-gray-500 hover:text-gray-900">
+                Extension
+              </Link>
               <Link href="/ownership" className="text-sm text-gray-500 hover:text-gray-900">
                 Ownership
               </Link>
