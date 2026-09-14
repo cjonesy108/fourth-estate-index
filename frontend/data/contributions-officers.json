@@ -1,0 +1,160 @@
+{
+  "as_of": "2026-09-13",
+  "rule_extra": "Named-officer rows are personal FEC, not the firm PAC and not the newsroom. Absence of a Super PAC check is recorded as absence — not as a zero ethics score.",
+  "records": [
+    {
+      "entity": "vanguard",
+      "layer": "parent_pac",
+      "cycle": "2024",
+      "amount_usd": 502046,
+      "amount_label": "$502k org cycle / PAC ~$383k to candidates",
+      "party_lean": "mixed",
+      "summary": "Vanguard Group 2024 cycle about $502k (PAC $380k + individuals $122k). The employee PAC split candidate gifts nearly even (about $185k D / $195k R). Index-fund voting is not this PAC. Not Salim Ramji and not any newsroom.",
+      "source_url": "https://www.opensecrets.org/orgs/vanguard-group/summary?id=D000022305&cycle=2024",
+      "source_label": "OpenSecrets — Vanguard Group 2024"
+    },
+    {
+      "entity": "salim-ramji",
+      "layer": "individual",
+      "cycle": "2016-2022",
+      "amount_usd": null,
+      "amount_label": "hard-money max-outs, not Super PAC scale",
+      "party_lean": "D",
+      "summary": "Ramji's itemized federal gifts while at BlackRock were Democratic candidate max-outs (Clinton 2016; later Schumer, Warnock, Bennet, Wyden) plus a DNC gift. No Vanguard-era Super PAC trail in the public lookup. Different checkbook from Vanguard PAC.",
+      "source_url": "https://www.opensecrets.org/donor-lookup/results?name=salim+ramji",
+      "source_label": "OpenSecrets donor lookup / FEC"
+    },
+    {
+      "entity": "state-street",
+      "layer": "parent_pac",
+      "cycle": "2024",
+      "amount_usd": 307676,
+      "amount_label": "$308k org cycle / PAC $153k",
+      "party_lean": "mixed",
+      "summary": "State Street 2024 cycle about $308k (individuals $143k, PAC $153k), roughly 65/35 D/R at the org level. The federal PAC is employee-funded; State Street's own 2024 PAC report shows mixed Banking/Financial Services committee gifts. Not Ron O'Hanley and not a newsroom.",
+      "source_url": "https://www.opensecrets.org/orgs/state-street-corp/totals?id=D000029194",
+      "source_label": "OpenSecrets — State Street 2024"
+    },
+    {
+      "entity": "ron-ohanley",
+      "layer": "individual",
+      "cycle": "2020-2023",
+      "amount_usd": null,
+      "amount_label": "candidate max-outs + State Street PAC payroll",
+      "party_lean": "D",
+      "summary": "O'Hanley's visible federal gifts are hard-money max-outs to Democrats (Gillibrand $3,300 and Katherine Clark $1,500 in Mar 2023; earlier Markey, Whitehouse, Joe Kennedy III) plus recurring gifts into State Street PAC. A separate $100,000 Massachusetts ballot-measure gift in 2022 is state, not FEC candidate money. Not State Street PAC spending.",
+      "source_url": "https://www.opensecrets.org/donor-lookup/results?name=ronald+ohanley",
+      "source_label": "OpenSecrets donor lookup / FEC"
+    },
+    {
+      "entity": "fox-corporation",
+      "layer": "parent_pac",
+      "cycle": "2024",
+      "amount_usd": null,
+      "amount_label": "employee PAC, not treasury",
+      "party_lean": "mixed",
+      "summary": "Fox PAC (C00693002) is the employee PAC. It is not Fox News's checkbook and it is not Lachlan Murdoch's $1M Super PAC gift. News Corp publishes a separate political-activity report for the newspaper parent.",
+      "source_url": "https://www.fec.gov/data/committee/C00693002/",
+      "source_label": "FEC — Fox PAC"
+    },
+    {
+      "entity": "lachlan-murdoch",
+      "layer": "individual",
+      "cycle": "2020",
+      "amount_usd": 1000000,
+      "amount_label": "$1M Senate Leadership Fund (2020)",
+      "party_lean": "R",
+      "summary": "Lachlan's largest public federal gift is $1 million to the Senate Leadership Fund on 23 Nov 2020. Same cycle: McConnell $2,800, Bluegrass Cmte $5,000, and payroll gifts into Fox PAC. OpenSecrets shows no direct Trump campaign gift. Not Fox News spending.",
+      "source_url": "https://www.opensecrets.org/donor-lookup/results?name=lachlan+murdoch",
+      "source_label": "OpenSecrets donor lookup / FEC"
+    },
+    {
+      "entity": "ag-sulzberger",
+      "layer": "individual",
+      "cycle": "2020-2024",
+      "amount_usd": 0,
+      "amount_label": "no itemized federal candidate gifts found",
+      "party_lean": "mixed",
+      "summary": "A Harvard Future of Media tally of 2020–21 leadership gifts recorded $0 / $0 for A.G. Sulzberger. Older Arthur Ochs Sulzberger gifts in the 1990s are a different person. Family Class B control of NYT is not a PAC. Absence of a check is not a score.",
+      "source_url": "https://futureofmedia.hsites.harvard.edu/",
+      "source_label": "Harvard Future of Media donation index / FEC lookup"
+    },
+    {
+      "entity": "brian-roberts",
+      "layer": "individual",
+      "cycle": "2013-2024",
+      "amount_usd": 5000,
+      "amount_label": "$5k/yr into Comcast PAC + NCTA PAC",
+      "party_lean": "mixed",
+      "summary": "Since about 2013 Roberts's visible federal pattern is annual $5,000 gifts into Comcast PAC and NCTA PAC rather than candidate max-outs. Earlier cycles mixed DNC and Pennsylvania party committees. Comcast's $7.4M org cycle is a different row.",
+      "source_url": "https://www.opensecrets.org/donor-lookup/results?name=Brian+Roberts",
+      "source_label": "OpenSecrets / Comcast 14a-8 compilation of FEC"
+    },
+    {
+      "entity": "nexstar",
+      "layer": "parent_pac",
+      "cycle": "2024",
+      "amount_usd": 442119,
+      "amount_label": "$442k org cycle / PAC ~$297k",
+      "party_lean": "mixed",
+      "summary": "Nexstar 2024 cycle about $442k (PAC $297k, individuals $145k). Candidate gifts from the PAC run both parties; a large individual slice hit the RNC. Not NewsNation's money and not TEGNA's (hold-separate).",
+      "source_url": "https://www.opensecrets.org/orgs/nexstar-media-group/summary?id=D000068622",
+      "source_label": "OpenSecrets — Nexstar 2024"
+    },
+    {
+      "entity": "iheartmedia",
+      "layer": "parent_pac",
+      "cycle": "2024",
+      "amount_usd": 1083997,
+      "amount_label": "$1.08M org cycle / PAC $579k",
+      "party_lean": "mixed",
+      "summary": "iHeart 2024 cycle about $1.08M (PAC $579k, individuals $505k). The PAC's candidate gifts were about 45% D / 54% R. Employee and PAC money, not Premiere Networks and not Bob Pittman personally.",
+      "source_url": "https://www.opensecrets.org/orgs/iheartmedia-inc/summary?id=D000059056",
+      "source_label": "OpenSecrets — iHeartMedia 2024"
+    },
+    {
+      "entity": "robert-pittman",
+      "layer": "individual",
+      "cycle": "2019-2020",
+      "amount_usd": 10000,
+      "amount_label": "$5k × 2 into iHeart PAC",
+      "party_lean": "mixed",
+      "summary": "Pittman's identifiable federal activity in the seed is $5,000 into iHeart PAC (Jul 2019 and Feb 2020) plus earlier NABPAC / industry PAC max-outs. Hired CEO, not a dual-class controller. Not the $1.08M org cycle.",
+      "source_url": "https://www.opensecrets.org/donor-lookup/results?cycle=2020&name=Robert+Pittman",
+      "source_label": "OpenSecrets donor lookup / FEC"
+    },
+    {
+      "entity": "hilton-h-howell",
+      "layer": "individual",
+      "cycle": "2016-2024",
+      "amount_usd": 36500,
+      "amount_label": "RNC $36.5k (2022) + recurring NABPAC",
+      "party_lean": "R",
+      "summary": "Howell's itemized federal pattern is Republican: Trump max-outs in 2019, $36,500 to the RNC in Jun 2022, and repeated $5,000 NABPAC gifts through 2024. Family Class A at Gray is voting control, not this checkbook. Not Gray's local newsrooms.",
+      "source_url": "https://www.opensecrets.org/donor-lookup/results?name=hilton+howell+",
+      "source_label": "OpenSecrets donor lookup / FEC"
+    },
+    {
+      "entity": "heath-freeman",
+      "layer": "individual",
+      "cycle": "2024",
+      "amount_usd": null,
+      "amount_label": "no Super PAC-scale personal file found",
+      "party_lean": "R",
+      "summary": "Alden has no federal PAC. OpenSecrets attributes the 2024 Alden cycle (~$71k, ~84% R) to individuals at the firm, not a treasury account. Freeman is the public face; the seed does not pin every employee gift on him. Click through stays on this person, not the Denver Post.",
+      "source_url": "https://www.opensecrets.org/orgs/alden-global-capital/totals?id=D000075626",
+      "source_label": "OpenSecrets — Alden Global Capital 2024"
+    },
+    {
+      "entity": "patrick-soon-shiong",
+      "layer": "individual",
+      "cycle": "2016-2018",
+      "amount_usd": 70800,
+      "amount_label": "$71k itemized in 2018 cycle",
+      "party_lean": "R",
+      "summary": "Soon-Shiong's last busy federal window was 2017–18: $50,000 to the McMorris Rodgers American Dream Project, Team Graham, Great America Committee, California Victory 2018. CampaignMoney shows $0 itemized in the 2020 cycle. Private LAT control is not a PAC.",
+      "source_url": "https://www.campaignmoney.com/political/contributions/patrick-soon-shiong.asp?cycle=18",
+      "source_label": "CampaignMoney / FEC 2018 cycle"
+    }
+  ]
+}
