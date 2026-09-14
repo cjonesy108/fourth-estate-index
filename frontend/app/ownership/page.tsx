@@ -6,6 +6,7 @@ import {
   PENDING_LABEL,
   allContributions,
   allPendingDeals,
+  formatAsOf,
   formatPct,
   getContributionsMeta,
   getEntity,
@@ -121,7 +122,7 @@ export default function OwnershipIndex() {
 
       <section className="mb-16">
         <h2 className="text-xl font-semibold mb-4">Institutional economic concentration</h2>
-        <p className="text-sm text-gray-500 mb-6">Same three holders across more issuers. Economic data as of {graph.as_of_economic}.</p>
+        <p className="text-sm text-gray-500 mb-6">Same three holders across more issuers. Each line carries its own 13F as-of date (PSKY is 31 Dec 2025; most others 30 Jun 2026).</p>
         <div className="space-y-8">
           {institutions.map((inst) => {
             const holdings = institutionHoldings(inst.slug);
@@ -150,6 +151,7 @@ export default function OwnershipIndex() {
                       <Link href={`/ownership/${h.issuer.slug}`} className="hover:underline">
                         {h.issuer.name}{h.issuer.ticker ? ` (${h.issuer.ticker})` : ""}
                       </Link>
+                      <span className="text-gray-400 tabular-nums">{formatAsOf(h.edge.as_of)}</span>
                       {h.outlets.length > 0 && (
                         <span className="text-gray-400">— {h.outlets.map((x) => x.name).join(", ")}</span>
                       )}

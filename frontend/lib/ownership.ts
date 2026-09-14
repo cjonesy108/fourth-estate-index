@@ -7,6 +7,7 @@ import pendingFile from "@/data/pending-control.json";
 import directoryOwnership from "@/data/ownership-directory.json";
 import contributionsFile from "@/data/contributions.json";
 import contributionAdds from "@/data/contributions-additions.json";
+import contributionOfficers from "@/data/contributions-officers.json";
 import peopleFile from "@/data/people.json";
 
 export type EntityType =
@@ -165,13 +166,16 @@ const data: OwnershipGraph = {
   ],
 };
 
+const officerFile = contributionOfficers as { as_of?: string; records: ContributionRecord[] };
+
 const contributions = {
-  as_of: (contributionsFile as { as_of: string }).as_of,
+  as_of: officerFile.as_of ?? (contributionsFile as { as_of: string }).as_of,
   rule:
     "Firm PAC, controller, and named officer are three different checkbooks. Opening CNN does not open Fink. Clicking through BlackRock does.",
   records: [
     ...(contributionsFile as { records: ContributionRecord[] }).records,
     ...(contributionAdds as { records: ContributionRecord[] }).records,
+    ...officerFile.records,
   ],
 };
 
@@ -515,6 +519,29 @@ export function controllerHoldings(controllerSlug: string): HolderPosition[] {
 export function formatPct(n: number | null | undefined): string {
   if (n === null || n === undefined) return "—";
   return `${n.toFixed(n >= 10 || Number.isInteger(n) ? 0 : 2)}%`;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export function formatAsOf(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const parts = iso.split("-").map((x) => Number(x));
+  const y = parts[0];
+  const m = parts[1];
+  const d = parts[2];
+  if (!y || !m) return iso;
+  return d ? `${d} ${MONTHS[m - 1]} ${y}` : `${MONTHS[m - 1]} ${y}`;
+}
+
+export function uniqueAsOf(edges: { as_of?: string | null }[]): string[] {
+  return Array.from(new Set(edges.map((e) => e.as_of).filter((d): d is string => Boolean(d)))).sort();
+}
+
+export function formatAsOfRange(edges: { as_of?: string | null }[]): string {
+  const dates = uniqueAsOf(edges);
+  if (dates.length === 0) return "—";
+  if (dates.length === 1) return formatAsOf(dates[0]);
+  return dates.map(formatAsOf).join(" · ");
 }
 
 export const EDGE_LABEL: Record<EdgeType, string> = {
