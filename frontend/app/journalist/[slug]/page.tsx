@@ -10,6 +10,7 @@ import {
   outletName,
 } from "@/lib/directory";
 import { fetchRecentWork, formatWorkDate } from "@/lib/work";
+import { OwnershipChip } from "@/app/ownership/chip";
 import ShareButton from "./ShareButton";
 
 function scoreColor(score: number | null): string {
@@ -99,6 +100,11 @@ export default async function JournalistPage({
         <h1 className="text-4xl font-bold mb-1">{profile.full_name}</h1>
         {(profile.beat || seeded?.beat) && (
           <p className="text-gray-500 mb-3">{profile.beat || seeded?.beat}</p>
+        )}
+        {outletSlug && (
+          <div className="mb-4">
+            <OwnershipChip directoryOutletSlug={outletSlug} />
+          </div>
         )}
         <div className="flex flex-wrap items-center gap-4 mb-4">
           <ShareButton slug={params.slug} />
