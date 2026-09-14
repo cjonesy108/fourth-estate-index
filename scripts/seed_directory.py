@@ -39,6 +39,12 @@ def load_directory() -> dict:
     return data
 
 
+def _status(raw: str | None) -> str:
+    if raw == "scored":
+        return "scored"
+    return "collecting"
+
+
 async def main():
     data = load_directory()
     outlets = {o["slug"]: o for o in data["outlets"]}
@@ -89,24 +95,35 @@ async def main():
                 x_handle=j.get("x_handle"),
             )
             await conn.execute(
-                "UPDATE journalists SET beat = $1, data_status = $2, updated_at = NOW() WHERE id = $3",
+                """
+                UPDATE journalists
+                SET beat = $1,
+                    data_status = CASE
+                        WHEN data_status = 'scored' THEN data_status
+                        ELSE $2
+                    END,
+                    updated_at = NOW()
+                WHERE id = $3
+                """,
                 j.get("beat"),
-                j.get("directory_status") or "collecting",
+                _status(j.get("directory_status")),
                 jid,
             )
             await conn.execute(
                 """
                 INSERT INTO journalist_identities
-                    (journalist_id, outlet_slug, author_slug, author_url, guardian_tag, source)
-                VALUES ($1,$2,$3,$4,$5,'directory')
+                    (journalist_id, outlet_slug, author_slug, author_url, feed_url, guardian_tag, source)
+                VALUES ($1,$2,$3,$4,$5,$6,'directory')
                 ON CONFLICT (journalist_id, outlet_slug, author_slug) DO UPDATE
                     SET author_url = EXCLUDED.author_url,
+                        feed_url = EXCLUDED.feed_url,
                         guardian_tag = EXCLUDED.guardian_tag
                 """,
                 jid,
                 j["primary_outlet"],
                 j.get("author_slug") or j["slug"],
                 j.get("author_url"),
+                j.get("feed_url"),
                 j.get("guardian_tag"),
             )
             print(f"  {j['full_name']} → {outlet['name']} [{j['directory_status']}]")
