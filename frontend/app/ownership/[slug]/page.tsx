@@ -240,7 +240,7 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
                 {h.outlets.length > 0 && (
                   <p className="text-sm text-gray-500 mt-2">
                     {h.outlets.map((o, i) => (
-                      <span key={o.slug}>{i > 0 && ", "}<Link href={`/ownership/{o.slug}`} className="hover:underline">{o.name}</Link></span>
+                      <span key={o.slug}>{i > 0 && ", "}<Link href={`/ownership/${o.slug}`} className="hover:underline">{o.name}</Link></span>
                     ))}
                   </p>
                 )}
