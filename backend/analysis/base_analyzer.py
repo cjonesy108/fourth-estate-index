@@ -1,6 +1,6 @@
 """
 Base class for all analysis modules.
-Every analyzer accepts a corpus, runs a versioned prompt against Claude,
+Every analyzer accepts a corpus, runs a versioned prompt against Grok,
 parses structured output, and returns scored dimensions with citations.
 """
 
@@ -11,9 +11,11 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Optional
 
-import anthropic
+import httpx
 
 logger = logging.getLogger(__name__)
+
+XAI_BASE = os.environ.get("XAI_API_BASE", "https://api.x.ai/v1")
 
 
 @dataclass
@@ -45,9 +47,11 @@ class BaseAnalyzer(ABC):
     max_tokens: int = 4096  # override in subclasses that produce verbose output
 
     def __init__(self):
-        self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-        self.model = "claude-sonnet-4-6"
-        self.methodology_version = os.environ.get("METHODOLOGY_VERSION", "1.0")
+        self.api_key = os.environ.get("XAI_API_KEY", "")
+        if not self.api_key:
+            raise RuntimeError("Missing XAI_API_KEY — add it as a GitHub Actions secret")
+        self.model = os.environ.get("SCORER_MODEL", "grok-4.6")
+        self.methodology_version = os.environ.get("METHODOLOGY_VERSION", "1.0-grok")
 
     @abstractmethod
     def build_prompt(self, corpus: list[dict]) -> str:
@@ -56,9 +60,36 @@ class BaseAnalyzer(ABC):
     @abstractmethod
     def parse_output(self, raw: str) -> tuple[dict, list[Citation]]:
         """
-        Parse Claude's structured response into (dimensions, citations).
+        Parse the model's structured response into (dimensions, citations).
         Must raise ValueError if output is malformed.
         """
+
+    def _complete(self, prompt: str) -> str:
+        resp = httpx.post(
+            f"{XAI_BASE}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": self.model,
+                "max_tokens": self.max_tokens,
+                "reasoning_effort": os.environ.get("SCORER_REASONING", "low"),
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=180.0,
+        )
+        try:
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            raise RuntimeError(
+                f"xAI API {resp.status_code}: {resp.text[:400]}"
+            ) from e
+        data = resp.json()
+        try:
+            return data["choices"][0]["message"]["content"] or ""
+        except (KeyError, IndexError, TypeError) as e:
+            raise RuntimeError(f"Unexpected xAI response shape: {data!r}") from e
 
     def run(self, corpus: list[dict]) -> AnalysisResult:
         prompt = self.build_prompt(corpus)
@@ -67,25 +98,16 @@ class BaseAnalyzer(ABC):
             f"model={self.model} prompt_v={self.prompt_version}"
         )
 
-        message = self.client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            messages=[{"role": "user", "content": prompt}],
-        )
-
-        raw_text = message.content[0].text
-        # Extract JSON — find the outermost { } regardless of any wrapping
+        raw_text = self._complete(prompt)
         start = raw_text.find("{")
         end = raw_text.rfind("}")
         cleaned = raw_text[start:end + 1] if start != -1 and end != -1 else raw_text
         dimensions, citations = self.parse_output(cleaned)
 
-        # Map article_index → guardian_id so citations can be linked to stored articles
         for c in citations:
             if c.article_index is not None and c.article_index < len(corpus):
                 c.article_id = corpus[c.article_index].get("guardian_id")
 
-        # Validate citations before returning
         valid_citations = self.validate_citations(citations, corpus)
         dropped = len(citations) - len(valid_citations)
         if dropped:
@@ -108,10 +130,6 @@ class BaseAnalyzer(ABC):
         """
         Every citation must be traceable to the corpus.
         This is the audit trail integrity check — no hallucinated sources.
-
-        We normalize whitespace before matching to account for HTML stripping
-        artifacts. We also try a sliding 10-word window match so that minor
-        truncation by Claude doesn't drop a legitimate citation.
         """
         corpus_text = self._normalize(
             " ".join(
@@ -135,11 +153,8 @@ class BaseAnalyzer(ABC):
         return re.sub(r"\s+", " ", text).strip().lower()
 
     def _is_in_corpus(self, cited: str, corpus: str) -> bool:
-        # Exact match after normalization
         if cited in corpus:
             return True
-        # Sliding window: check if any 10 consecutive words from the citation
-        # appear in the corpus — catches minor truncation or ellipsis
         words = cited.split()
         if len(words) >= 10:
             for i in range(len(words) - 9):
