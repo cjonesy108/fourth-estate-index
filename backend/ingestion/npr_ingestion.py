@@ -26,7 +26,7 @@ UA = (
     "Chrome/128.0.0.0 Safari/537.36"
 )
 MIN_WORD_COUNT = 80
-MAX_STORIES = 80
+MAX_STORIES = 60
 STORY_RE = re.compile(r"https?://(?:www\.|text\.)?npr\.org/(20\d{2}/\d{2}/\d{2}/[^\s\"'?#]+)")
 TITLE_RE = re.compile(r"<h1[^>]*class=\"story-title\"[^>]*>(.*?)</h1>", re.I | re.S)
 TITLE_FALLBACK_RE = re.compile(r"<title>(.*?)</title>", re.I | re.S)
@@ -45,7 +45,7 @@ def _strip_html(html: str) -> str:
 class NPRIngester:
     source_name = "npr"
 
-    def __init__(self, timeout: float = 60.0):
+    def __init__(self, timeout: float = 25.0):
         self.client = httpx.AsyncClient(
             timeout=timeout,
             headers={
@@ -68,7 +68,7 @@ class NPRIngester:
 
     async def _get(self, url: str, params: Optional[dict] = None) -> Optional[httpx.Response]:
         last: Optional[Exception] = None
-        for attempt in range(5):
+        for attempt in range(3):
             try:
                 resp = await self.client.get(url, params=params)
                 if resp.status_code in (403, 429, 503):
@@ -79,8 +79,8 @@ class NPRIngester:
                 return resp
             except Exception as e:
                 last = e
-                await asyncio.sleep(1.5 * (attempt + 1))
-        logger.warning("GET failed %s params=%s err=%r", url, params, last)
+                await asyncio.sleep(1.2 * (attempt + 1))
+        logger.warning("GET failed %s err=%r", url, last)
         return None
 
     async def ingest(
@@ -134,30 +134,33 @@ class NPRIngester:
         found: set[str] = set()
         seen: list[str] = []
 
-        pages = [f"https://www.npr.org/people/{author_slug}"]
-        year, month = start.year, start.month
-        while datetime(year, month, 1, tzinfo=timezone.utc) <= end:
-            pages.append(
-                f"https://www.npr.org/people/{author_slug}/archive?date={month}-28-{year}"
-            )
-            if month == 12:
-                year += 1
-                month = 1
-            else:
-                month += 1
-            if len(pages) > 50:
-                break
+        bio = await self._get(f"https://www.npr.org/people/{author_slug}")
+        if bio is None:
+            return []
+        self._collect(bio.text, found, seen)
 
-        for page_url in pages:
-            resp = await self._get(page_url)
-            if resp is None:
-                continue
-            for path in STORY_RE.findall(resp.text):
-                full = f"https://www.npr.org/{path}"
-                if full not in found:
-                    found.add(full)
-                    seen.append(full)
+        year, month = end.year, end.month
+        hops = 0
+        while datetime(year, month, 1, tzinfo=timezone.utc) >= start and hops < 16:
+            page = await self._get(
+                f"https://www.npr.org/people/{author_slug}/archive",
+                params={"date": f"{month}-28-{year}"},
+            )
+            if page is not None:
+                self._collect(page.text, found, seen)
+            hops += 1
+            month -= 3
+            while month <= 0:
+                month += 12
+                year -= 1
         return seen
+
+    def _collect(self, html: str, found: set[str], seen: list[str]) -> None:
+        for path in STORY_RE.findall(html):
+            full = f"https://www.npr.org/{path}"
+            if full not in found:
+                found.add(full)
+                seen.append(full)
 
     async def _fetch_story(self, url: str) -> Optional[ParsedArticle]:
         path = urlparse(url).path.lstrip("/")
@@ -167,7 +170,7 @@ class NPRIngester:
             if resp is None:
                 continue
             html = resp.text
-            if "paragraphs-container" in html or "story-title" in html:
+            if "paragraphs-container" in html or "storytext" in html:
                 break
         if not html:
             return None
@@ -177,7 +180,6 @@ class NPRIngester:
         body_m = BODY_RE.search(html)
         body = _strip_html(body_m.group(1) if body_m else "")
         if not body:
-            # www storytext fallback
             body_m = re.search(
                 r'<div[^>]*id="storytext"[^>]*>(.*?)</div>', html, re.I | re.S
             )
