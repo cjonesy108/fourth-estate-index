@@ -1,5 +1,5 @@
 {
-  "version": "0.4.1",
+  "version": "0.5.0",
   "as_of": "2026-09-13",
   "outlets": [
     {
@@ -27,7 +27,7 @@
       "domain": "npr.org",
       "api_source": "npr",
       "access": "full_public",
-      "text_policy": "Most text stories are publicly readable. API/RSS first, no login.",
+      "text_policy": "Most text stories are publicly readable on npr.org and text.npr.org. People pages list work. No login.",
       "author_url_template": "https://www.npr.org/people/{author_slug}"
     }
   ],
@@ -56,6 +56,18 @@
     {"slug":"alejandra-martinez","full_name":"Alejandra Martinez","aliases":["Alejandra Martinez"],"primary_outlet":"texas-tribune","beat":"Environment","directory_status":"listed","author_slug":"alejandra-martinez","author_url":"https://www.texastribune.org/author/alejandra-martinez/","feed_url":"https://www.texastribune.org/author/alejandra-martinez/feed/","x_handle":null},
     {"slug":"paul-cobler","full_name":"Paul Cobler","aliases":["Paul Cobler"],"primary_outlet":"texas-tribune","beat":"Economy","directory_status":"listed","author_slug":"paul-cobler","author_url":"https://www.texastribune.org/author/paul-cobler/","feed_url":"https://www.texastribune.org/author/paul-cobler/feed/","x_handle":null},
     {"slug":"megan-menchaca","full_name":"Megan Menchaca","aliases":["Megan Menchaca"],"primary_outlet":"texas-tribune","beat":"K-12 education","directory_status":"listed","author_slug":"megan-menchaca","author_url":"https://www.texastribune.org/author/megan-menchaca/","feed_url":"https://www.texastribune.org/author/megan-menchaca/feed/","x_handle":null},
-    {"slug":"jaclyn-diaz","full_name":"Jaclyn Diaz","aliases":["Jaclyn Diaz"],"primary_outlet":"npr","beat":"Newshub / criminal justice","directory_status":"listed","author_slug":"930959243/jaclyn-diaz","author_url":"https://www.npr.org/people/930959243/jaclyn-diaz","x_handle":null}
+    {"slug":"jaclyn-diaz","full_name":"Jaclyn Diaz","aliases":["Jaclyn Diaz"],"primary_outlet":"npr","beat":"Newshub / criminal justice","directory_status":"listed","author_slug":"930959243/jaclyn-diaz","author_url":"https://www.npr.org/people/930959243/jaclyn-diaz","x_handle":null},
+    {"slug":"domenico-montanaro","full_name":"Domenico Montanaro","aliases":["Domenico Montanaro"],"primary_outlet":"npr","beat":"Politics","directory_status":"listed","author_slug":"392602474/domenico-montanaro","author_url":"https://www.npr.org/people/392602474/domenico-montanaro","x_handle":null},
+    {"slug":"danielle-kurtzleben","full_name":"Danielle Kurtzleben","aliases":["Danielle Kurtzleben"],"primary_outlet":"npr","beat":"White House","directory_status":"listed","author_slug":"409798174/danielle-kurtzleben","author_url":"https://www.npr.org/people/409798174/danielle-kurtzleben","x_handle":null},
+    {"slug":"tamara-keith","full_name":"Tamara Keith","aliases":["Tamara Keith"],"primary_outlet":"npr","beat":"White House / politics","directory_status":"listed","author_slug":"122805042/tamara-keith","author_url":"https://www.npr.org/people/122805042/tamara-keith","x_handle":null},
+    {"slug":"franco-ordonez","full_name":"Franco Ordoñez","aliases":["Franco Ordoñez","Franco Ordonez"],"primary_outlet":"npr","beat":"White House","directory_status":"listed","author_slug":"729411445/franco-ordonez","author_url":"https://www.npr.org/people/729411445/franco-ordonez","x_handle":null},
+    {"slug":"claudia-grisales","full_name":"Claudia Grisales","aliases":["Claudia Grisales"],"primary_outlet":"npr","beat":"Congress","directory_status":"listed","author_slug":"731633770/claudia-grisales","author_url":"https://www.npr.org/people/731633770/claudia-grisales","x_handle":null},
+    {"slug":"deepa-shivaram","full_name":"Deepa Shivaram","aliases":["Deepa Shivaram"],"primary_outlet":"npr","beat":"White House","directory_status":"listed","author_slug":"1015466926/deepa-shivaram","author_url":"https://www.npr.org/people/1015466926/deepa-shivaram","x_handle":null},
+    {"slug":"stephen-fowler","full_name":"Stephen Fowler","aliases":["Stephen Fowler"],"primary_outlet":"npr","beat":"Washington / politics","directory_status":"listed","author_slug":"1219684807/stephen-fowler","author_url":"https://www.npr.org/people/1219684807/stephen-fowler","x_handle":null},
+    {"slug":"shannon-bond","full_name":"Shannon Bond","aliases":["Shannon Bond"],"primary_outlet":"npr","beat":"Technology / influence","directory_status":"listed","author_slug":"763523701/shannon-bond","author_url":"https://www.npr.org/people/763523701/shannon-bond","x_handle":null},
+    {"slug":"bobby-allyn","full_name":"Bobby Allyn","aliases":["Bobby Allyn"],"primary_outlet":"npr","beat":"Technology","directory_status":"listed","author_slug":"638550790/bobby-allyn","author_url":"https://www.npr.org/people/638550790/bobby-allyn","x_handle":null},
+    {"slug":"odette-yousef","full_name":"Odette Yousef","aliases":["Odette Yousef"],"primary_outlet":"npr","beat":"National security / extremism","directory_status":"listed","author_slug":"1052543088/odette-yousef","author_url":"https://www.npr.org/people/1052543088/odette-yousef","x_handle":null},
+    {"slug":"ashley-lopez","full_name":"Ashley Lopez","aliases":["Ashley Lopez"],"primary_outlet":"npr","beat":"Politics","directory_status":"listed","author_slug":"919091588/ashley-lopez","author_url":"https://www.npr.org/people/919091588/ashley-lopez","x_handle":null},
+    {"slug":"chiara-eisner","full_name":"Chiara Eisner","aliases":["Chiara Eisner"],"primary_outlet":"npr","beat":"Investigations","directory_status":"listed","author_slug":"1108416123/chiara-eisner","author_url":"https://www.npr.org/people/1108416123/chiara-eisner","x_handle":null}
   ]
 }
