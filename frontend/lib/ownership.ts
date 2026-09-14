@@ -1,6 +1,7 @@
 import graph from "@/data/ownership.json";
 import additions from "@/data/ownership-additions.json";
 import groups from "@/data/ownership-groups.json";
+import groups2 from "@/data/ownership-groups-2.json";
 import thirteenF from "@/data/ownership-13f.json";
 import pendingFile from "@/data/pending-control.json";
 import directoryOwnership from "@/data/ownership-directory.json";
@@ -101,7 +102,7 @@ export interface MediaGroup {
   pending: PendingDeal[];
 }
 
-export type PendingStatus = "paused" | "announced";
+export type PendingStatus = "paused" | "announced" | "hold_separate";
 
 export interface PendingDeal {
   id: string;
@@ -121,11 +122,14 @@ export interface OwnershipChipModel {
   pending?: { headline: string };
 }
 
-const groupsFile = groups as {
+type GroupFile = {
   entities: OwnershipEntity[];
   edges: OwnershipEdge[];
   affiliations: Affiliation[];
 };
+
+const groupsFile = groups as GroupFile;
+const groupsFile2 = groups2 as GroupFile;
 
 const directoryFile = directoryOwnership as {
   entities: OwnershipEntity[];
@@ -136,6 +140,7 @@ const people = {
   affiliations: [
     ...(peopleFile as { affiliations: Affiliation[] }).affiliations,
     ...groupsFile.affiliations,
+    ...(groupsFile2.affiliations ?? []),
   ],
   entities: [...(peopleFile as { entities: OwnershipEntity[] }).entities],
 };
@@ -146,6 +151,7 @@ const data: OwnershipGraph = {
     ...(graph as OwnershipGraph).entities,
     ...(additions.entities as OwnershipEntity[]),
     ...groupsFile.entities,
+    ...groupsFile2.entities,
     ...directoryFile.entities,
     ...people.entities,
   ],
@@ -153,6 +159,7 @@ const data: OwnershipGraph = {
     ...(graph as OwnershipGraph).edges,
     ...(additions.edges as OwnershipEdge[]),
     ...groupsFile.edges,
+    ...groupsFile2.edges,
     ...((thirteenF as { edges: OwnershipEdge[] }).edges),
     ...(directoryFile.edges ?? []),
   ],
@@ -178,7 +185,7 @@ const entitiesBySlug = new Map(data.entities.map((e) => [e.slug, e]));
 
 const GROUP_REACH: Record<string, string> = {
   "sinclair-inc": "~179 local TV stations, 81 markets",
-  nexstar: "201 owned or partner stations, 116 markets; NewsNation; The Hill",
+  nexstar: "201 owned or partner stations, 116 markets; NewsNation; The Hill; TEGNA held separate",
   hearst: "Newspapers + Hearst Television; private family",
   "alden-global-capital": "2nd-largest U.S. newspaper owner after Gannett",
   gannett: "Largest U.S. newspaper chain by title count",
@@ -191,6 +198,11 @@ const GROUP_REACH: Record<string, string> = {
   "paramount-skydance": "CBS News; Ellison Class A",
   "axel-springer": "Politico, Business Insider, Telegraph, Bild",
   "thomson-reuters": "Reuters newswire",
+  tegna: "64 local TV stations, 51 markets; Nexstar parent, hold-separate",
+  "gray-media": "117 markets; ~37% of U.S. TV households; Howell Class A",
+  "cox-media-group": "Apollo majority; WSB-TV and other local TV/radio",
+  iheartmedia: "860+ radio stations, ~160 markets; Premiere Networks",
+  "nant-capital": "Los Angeles Times; San Diego Union-Tribune",
 };
 
 const DIRECTORY_TO_OWNERSHIP: Record<string, string> = {
@@ -528,4 +540,5 @@ export const VIA_LABEL: Record<PowerLink["via"], string> = {
 export const PENDING_LABEL: Record<PendingStatus, string> = {
   paused: "Paused — not closed",
   announced: "Announced — not closed",
+  hold_separate: "Closed — held separate",
 };
