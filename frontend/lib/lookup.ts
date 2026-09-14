@@ -65,7 +65,7 @@ export function canonicalizeArticleUrl(raw: string | null | undefined): string |
   try {
     const u = new URL(raw);
     u.hash = "";
-    [...u.searchParams.keys()].forEach((k) => {
+    Array.from(u.searchParams.keys()).forEach((k) => {
       if (k.toLowerCase().startsWith("utm_") || k.toLowerCase() === "fbclid" || k.toLowerCase() === "gclid") {
         u.searchParams.delete(k);
       }
@@ -85,11 +85,11 @@ function foldName(name: string): string {
 
 export function findOutletByHost(hostOrUrl: string | null | undefined) {
   const host = normalizeHost(hostOrUrl);
-  if (!host) return undefined;
+  if (!host) return null;
   return listDirectoryOutlets().find((o) => {
     const domain = o.domain.replace(/^www\./, "").toLowerCase();
     return host === domain || host.endsWith(`.${domain}`);
-  });
+  }) || null;
 }
 
 export function findJournalistsByNames(names: string[], outletSlug?: string | null): DirectoryJournalist[] {
@@ -138,7 +138,7 @@ export function toLookupJournalist(j: DirectoryJournalist, scores?: Partial<Look
 }
 
 export function buildLookupNotes(opts: {
-  outlet: { name: string; queued?: boolean } | undefined;
+  outlet: { name: string; queued?: boolean } | undefined | null;
   journalists: LookupJournalist[];
   authors: string[];
   article: LookupArticle;
