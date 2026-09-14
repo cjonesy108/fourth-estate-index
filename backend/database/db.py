@@ -123,6 +123,32 @@ async def save_pillar_scores(conn, journalist_id: str, scores: dict, corpus_size
     )
 
 
+async def save_fec_records(conn, journalist_id: str, records: list) -> int:
+    inserted = 0
+    for r in records:
+        date = r.contribution_date or None
+        result = await conn.execute(
+            """
+            INSERT INTO fec_records
+                (journalist_id, contributor_name, recipient_name, recipient_type,
+                 amount, contribution_date, fec_record_id, confidence)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+            ON CONFLICT (fec_record_id) DO NOTHING
+            """,
+            journalist_id,
+            r.contributor_name,
+            r.recipient_name,
+            r.recipient_type,
+            r.amount,
+            date if date else None,
+            r.fec_record_id,
+            "auto",
+        )
+        if result == "INSERT 0 1":
+            inserted += 1
+    return inserted
+
+
 async def save_corrections(conn, journalist_id: str, publication_id: str, corrections: list, article_id_map: dict) -> int:
     inserted = 0
     for c in corrections:
