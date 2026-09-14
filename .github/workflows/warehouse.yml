@@ -10,6 +10,8 @@ on:
         type: choice
         options:
           - status
+          - ingest-propublica
+          - ingest-tribune
           - score-propublica-one
           - score-propublica-all
       slug:
@@ -40,14 +42,18 @@ jobs:
         run: |
           if [ -z "$DATABASE_URL" ]; then
             echo "Missing GitHub secret DATABASE_URL"
-            echo "Copy it from Railway → your Postgres service → Variables."
             exit 1
           fi
-          if [ "${{ github.event.inputs.job }}" != "status" ] && [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "Missing GitHub secret ANTHROPIC_API_KEY"
-            exit 1
-          fi
-          echo "Secrets present."
+          JOB="${{ github.event.inputs.job }}"
+          case "$JOB" in
+            score-*)
+              if [ -z "$ANTHROPIC_API_KEY" ]; then
+                echo "Missing GitHub secret ANTHROPIC_API_KEY"
+                exit 1
+              fi
+              ;;
+          esac
+          echo "Secrets present for $JOB."
 
       - name: Apply schema patch and seed roster
         env:
@@ -61,6 +67,22 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: PYTHONPATH=. python3 scripts/warehouse_status.py
+
+      - name: Ingest ProPublica (no model)
+        if: ${{ github.event.inputs.job == 'ingest-propublica' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          PYTHONPATH=. python3 scripts/ingest_open_text.py propublica
+          PYTHONPATH=. python3 scripts/warehouse_status.py
+
+      - name: Ingest Texas Tribune (no model)
+        if: ${{ github.event.inputs.job == 'ingest-tribune' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          PYTHONPATH=. python3 scripts/ingest_open_text.py texastribune
+          PYTHONPATH=. python3 scripts/warehouse_status.py
 
       - name: Score one ProPublica journalist
         if: ${{ github.event.inputs.job == 'score-propublica-one' }}
