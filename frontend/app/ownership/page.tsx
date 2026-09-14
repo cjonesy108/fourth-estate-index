@@ -1,19 +1,22 @@
 import Link from "next/link";
 import { Metadata } from "next";
+import { OutletExplorer } from "./explorer";
 import {
   LAYER_LABEL,
+  PENDING_LABEL,
   allContributions,
-  controlSnapshot,
+  allPendingDeals,
   formatPct,
   getContributionsMeta,
   getEntity,
   getGraph,
+  getPendingMeta,
   institutionHoldings,
   listControllers,
   listInstitutions,
+  listMediaGroups,
   listOutlets,
   officersOf,
-  publicParent,
 } from "@/lib/ownership";
 
 export const metadata: Metadata = {
@@ -29,6 +32,9 @@ export default function OwnershipIndex() {
   const controllers = listControllers();
   const giving = allContributions();
   const meta = getContributionsMeta();
+  const mediaGroups = listMediaGroups();
+  const pending = allPendingDeals();
+  const pendingMeta = getPendingMeta();
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-16">
@@ -37,8 +43,7 @@ export default function OwnershipIndex() {
         <h1 className="text-4xl font-bold tracking-tight mb-4">Who owns the media</h1>
         <p className="text-lg text-gray-600 leading-relaxed mb-4">
           Where there is a controller, we name them and the voting share.
-          Where there is not, we show the <strong>1-share-1-vote parent</strong> and the
-          top institutional holders — not the word “dispersed.”
+          The public float still shows under <strong>Concentration</strong> — Murdoch votes Fox; Vanguard can still own the Class A.
         </p>
         <p className="text-gray-600 leading-relaxed">
           Political money is split the same way: firm PAC vs named officer.
@@ -47,63 +52,76 @@ export default function OwnershipIndex() {
       </header>
 
       <section className="mb-16">
-        <h2 className="text-xl font-semibold mb-4">Outlets</h2>
-        <p className="text-sm text-gray-500 mb-6">{outlets.length} outlets. Concentration is top 13F holders of the public parent.</p>
-        <div className="overflow-x-auto border border-gray-100 rounded-lg">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                <th className="px-4 py-3 font-medium">Outlet</th>
-                <th className="px-4 py-3 font-medium">Control</th>
-                <th className="px-4 py-3 font-medium">Concentration</th>
-              </tr>
-            </thead>
-            <tbody>
-              {outlets.map((o) => {
-                const snap = controlSnapshot(o.slug);
-                const parent = publicParent(o.slug);
-                return (
-                  <tr key={o.slug} className="border-b border-gray-50 last:border-0 align-top">
-                    <td className="px-4 py-3">
-                      <Link href={`/ownership/${o.slug}`} className="font-medium hover:underline">{o.name}</Link>
-                      {parent && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          <Link href={`/ownership/${parent.slug}`} className="hover:underline">
-                            {parent.ticker ?? parent.name}
-                          </Link>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {snap.href ? (
-                        <Link href={snap.href} className="hover:underline">{snap.label}</Link>
-                      ) : (
-                        snap.label
-                      )}
-                      {snap.kind === "controller" && (
-                        <div className="text-xs text-gray-400 mt-1">{snap.detail}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs leading-relaxed">
-                      {snap.kind === "institutional"
-                        ? snap.detail
-                        : snap.kind === "closed"
-                        ? snap.detail
-                        : snap.topHolders.length
-                        ? snap.topHolders.map((h) => `${h.entity.name} ${formatPct(h.pct)}`).join(" · ")
-                        : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <h2 className="text-xl font-semibold mb-2">Pending control</h2>
+        <p className="text-sm text-gray-500 mb-6">{pendingMeta.rule}</p>
+        <ul className="space-y-3">
+          {pending.map((d) => (
+            <li key={d.id} className="border border-amber-200 bg-amber-50/60 rounded-lg p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+                <p className="font-semibold">{d.headline}</p>
+                <span className="text-xs uppercase tracking-wide text-amber-800">{PENDING_LABEL[d.status]}</span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed mb-2">{d.body}</p>
+              <p className="text-xs text-gray-400">
+                <a href={d.source_url} className="hover:underline" target="_blank" rel="noreferrer">
+                  {d.source_label}
+                </a>
+              </p>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="mb-16">
+        <h2 className="text-xl font-semibold mb-2">Groups</h2>
+        <p className="text-sm text-gray-500 mb-6">
+          One parent, many newsrooms. Group nodes are not a full FCC census.
+        </p>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {mediaGroups.map((g) => (
+            <li key={g.entity.slug} className="border border-gray-100 rounded-lg p-4">
+              <div className="flex items-baseline justify-between gap-2">
+                <Link href={`/ownership/${g.entity.slug}`} className="font-semibold hover:underline">
+                  {g.entity.name}
+                  {g.entity.ticker ? ` (${g.entity.ticker})` : ""}
+                </Link>
+                <span className="text-xs text-gray-400">
+                  {g.pending.length > 0 ? "Pending · " : ""}
+                  {g.outlets.length} title{g.outlets.length === 1 ? "" : "s"}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">{g.reach}</p>
+              <p className="text-sm text-gray-700 mt-2">
+                {g.snapshot.href ? (
+                  <Link href={g.snapshot.href} className="hover:underline">{g.snapshot.label}</Link>
+                ) : (
+                  g.snapshot.label
+                )}
+                {g.snapshot.kind === "controller" && (
+                  <span className="text-gray-400"> · {g.snapshot.detail}</span>
+                )}
+              </p>
+              {g.outlets.length > 0 && (
+                <p className="text-xs text-gray-400 mt-2">
+                  {g.outlets.slice(0, 4).map((o, i) => (
+                    <span key={o.slug}>
+                      {i > 0 && ", "}
+                      <Link href={`/ownership/${o.slug}`} className="hover:underline">{o.name}</Link>
+                    </span>
+                  ))}
+                  {g.outlets.length > 4 ? ` + ${g.outlets.length - 4}` : ""}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <OutletExplorer outlets={outlets} />
+
+      <section className="mb-16">
         <h2 className="text-xl font-semibold mb-4">Institutional economic concentration</h2>
-        <p className="text-sm text-gray-500 mb-6">Holdings plus the named officer, when we have one. Economic data as of {graph.as_of_economic}.</p>
+        <p className="text-sm text-gray-500 mb-6">Same three holders across more issuers. Economic data as of {graph.as_of_economic}.</p>
         <div className="space-y-8">
           {institutions.map((inst) => {
             const holdings = institutionHoldings(inst.slug);
@@ -125,23 +143,19 @@ export default function OwnershipIndex() {
                     ))}
                   </p>
                 )}
-                {holdings.length === 0 ? (
-                  <p className="text-sm text-gray-400">No 13F rows in this seed yet.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {holdings.map((h) => (
-                      <li key={h.issuer.slug} className="text-sm text-gray-700 flex flex-wrap gap-x-2">
-                        <span className="tabular-nums text-gray-900 font-medium w-16">{formatPct(h.edge.pct_economic)}</span>
-                        <Link href={`/ownership/${h.issuer.slug}`} className="hover:underline">
-                          {h.issuer.name}{h.issuer.ticker ? ` (${h.issuer.ticker})` : ""}
-                        </Link>
-                        {h.outlets.length > 0 && (
-                          <span className="text-gray-400">— {h.outlets.map((x) => x.name).join(", ")}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <ul className="space-y-2">
+                  {holdings.map((h) => (
+                    <li key={h.issuer.slug} className="text-sm text-gray-700 flex flex-wrap gap-x-2">
+                      <span className="tabular-nums text-gray-900 font-medium w-16">{formatPct(h.edge.pct_economic)}</span>
+                      <Link href={`/ownership/${h.issuer.slug}`} className="hover:underline">
+                        {h.issuer.name}{h.issuer.ticker ? ` (${h.issuer.ticker})` : ""}
+                      </Link>
+                      {h.outlets.length > 0 && (
+                        <span className="text-gray-400">— {h.outlets.map((x) => x.name).join(", ")}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
             );
           })}

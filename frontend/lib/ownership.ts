@@ -1,6 +1,8 @@
 import graph from "@/data/ownership.json";
 import additions from "@/data/ownership-additions.json";
 import groups from "@/data/ownership-groups.json";
+import thirteenF from "@/data/ownership-13f.json";
+import pendingFile from "@/data/pending-control.json";
 import contributionsFile from "@/data/contributions.json";
 import contributionAdds from "@/data/contributions-additions.json";
 import peopleFile from "@/data/people.json";
@@ -90,6 +92,27 @@ export interface PowerLink {
   role: string;
 }
 
+export interface MediaGroup {
+  entity: OwnershipEntity;
+  outlets: OwnershipEntity[];
+  reach: string;
+  snapshot: ControlSnapshot;
+  pending: PendingDeal[];
+}
+
+export type PendingStatus = "paused" | "announced";
+
+export interface PendingDeal {
+  id: string;
+  status: PendingStatus;
+  headline: string;
+  body: string;
+  closes_no_earlier_than: string | null;
+  source_url: string;
+  source_label: string;
+  entities: string[];
+}
+
 const groupsFile = groups as {
   entities: OwnershipEntity[];
   edges: OwnershipEdge[];
@@ -101,9 +124,7 @@ const people = {
     ...(peopleFile as { affiliations: Affiliation[] }).affiliations,
     ...groupsFile.affiliations,
   ],
-  entities: [
-    ...(peopleFile as { entities: OwnershipEntity[] }).entities,
-  ],
+  entities: [...(peopleFile as { entities: OwnershipEntity[] }).entities],
 };
 
 const data: OwnershipGraph = {
@@ -118,6 +139,7 @@ const data: OwnershipGraph = {
     ...(graph as OwnershipGraph).edges,
     ...(additions.edges as OwnershipEdge[]),
     ...groupsFile.edges,
+    ...((thirteenF as { edges: OwnershipEdge[] }).edges),
   ],
 };
 
@@ -131,7 +153,30 @@ const contributions = {
   ],
 };
 
+const pending = pendingFile as {
+  as_of: string;
+  rule: string;
+  deals: PendingDeal[];
+};
+
 const entitiesBySlug = new Map(data.entities.map((e) => [e.slug, e]));
+
+const GROUP_REACH: Record<string, string> = {
+  "sinclair-inc": "~179 local TV stations, 81 markets",
+  nexstar: "201 owned or partner stations, 116 markets; NewsNation; The Hill",
+  hearst: "Newspapers + Hearst Television; private family",
+  "alden-global-capital": "2nd-largest U.S. newspaper owner after Gannett",
+  gannett: "Largest U.S. newspaper chain by title count",
+  "advance-publications": "Newhouse papers + Condé Nast",
+  "news-corp": "WSJ, New York Post, HarperCollins, News UK",
+  "fox-corporation": "Fox News, Fox Business, Fox Sports, Tubi",
+  comcast: "NBC News, MSNBC; NBCU spin announced, not closed",
+  "walt-disney": "ABC News; parks and studios",
+  "warner-bros-discovery": "CNN; Paramount deal paused into 2027",
+  "paramount-skydance": "CBS News; Ellison Class A",
+  "axel-springer": "Politico, Business Insider, Telegraph, Bild",
+  "thomson-reuters": "Reuters newswire",
+};
 
 export function getGraph(): OwnershipGraph {
   return data;
@@ -139,6 +184,18 @@ export function getGraph(): OwnershipGraph {
 
 export function getContributionsMeta() {
   return { as_of: contributions.as_of, rule: contributions.rule };
+}
+
+export function getPendingMeta() {
+  return { as_of: pending.as_of, rule: pending.rule };
+}
+
+export function allPendingDeals(): PendingDeal[] {
+  return pending.deals;
+}
+
+export function pendingDealsFor(slug: string): PendingDeal[] {
+  return pending.deals.filter((d) => d.entities.includes(slug));
 }
 
 export function officersOf(orgSlug: string): { person: OwnershipEntity; role: string }[] {
@@ -186,6 +243,33 @@ export function listControllers(): OwnershipEntity[] {
     data.edges.filter((e) => e.type === "voting_control" || e.type === "beneficial_owner").map((e) => e.holder)
   );
   return data.entities.filter((e) => slugs.has(e.slug)).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function listMediaGroups(): MediaGroup[] {
+  return Object.keys(GROUP_REACH)
+    .map((slug) => {
+      const entity = getEntity(slug);
+      if (!entity) return null;
+      const outlets = descendantOutlets(slug);
+      const probe = outlets[0]?.slug ?? slug;
+      return {
+        entity,
+        outlets,
+        reach: GROUP_REACH[slug],
+        snapshot: controlSnapshot(probe),
+        pending: pendingDealsFor(slug),
+      } as MediaGroup;
+    })
+    .filter((g): g is MediaGroup => g !== null)
+    .sort((a, b) => b.outlets.length - a.outlets.length || a.entity.name.localeCompare(b.entity.name));
+}
+
+export function outletKind(slug: string): "family" | "institutional" | "closed" {
+  return controlSnapshot(slug).kind === "controller"
+    ? "family"
+    : controlSnapshot(slug).kind === "institutional"
+    ? "institutional"
+    : "closed";
 }
 
 const CONTROL_EDGES: EdgeType[] = ["operates", "wholly_owns", "voting_control", "beneficial_owner"];
@@ -384,4 +468,9 @@ export const VIA_LABEL: Record<PowerLink["via"], string> = {
   voting: "Voting control",
   economic: "Economic stake",
   office: "Office",
+};
+
+export const PENDING_LABEL: Record<PendingStatus, string> = {
+  paused: "Paused — not closed",
+  announced: "Announced — not closed",
 };

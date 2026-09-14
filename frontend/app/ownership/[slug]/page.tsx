@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import {
   EDGE_LABEL,
   LAYER_LABEL,
+  PENDING_LABEL,
   VIA_LABEL,
   clickThrough,
   contributionsFor,
@@ -17,6 +18,7 @@ import {
   institutionHoldings,
   officersOf,
   orgsOf,
+  pendingDealsFor,
   publicParent,
 } from "@/lib/ownership";
 
@@ -50,6 +52,7 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
   const power = clickThrough(entity.slug);
   const officers = officersOf(entity.slug);
   const seats = orgsOf(entity.slug);
+  const pending = pendingDealsFor(entity.slug);
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-16">
@@ -79,6 +82,25 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
           </p>
         )}
       </header>
+
+      {pending.length > 0 && (
+        <section className="mb-12">
+          {pending.map((d) => (
+            <div key={d.id} className="border border-amber-200 bg-amber-50/60 rounded-lg p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+                <p className="font-semibold">{d.headline}</p>
+                <span className="text-xs uppercase tracking-wide text-amber-800">{PENDING_LABEL[d.status]}</span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed mb-2">{d.body}</p>
+              <p className="text-xs text-gray-400">
+                <a href={d.source_url} className="hover:underline" target="_blank" rel="noreferrer">
+                  {d.source_label}
+                </a>
+              </p>
+            </div>
+          ))}
+        </section>
+      )}
 
       {chain.length > 1 && (
         <section className="mb-12">
