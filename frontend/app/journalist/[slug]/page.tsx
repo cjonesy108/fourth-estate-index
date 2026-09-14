@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
 import { api } from "@/lib/api";
-import { JournalistProfile } from "@/lib/types";
+import { Citation, JournalistProfile } from "@/lib/types";
 import {
   directoryProfile,
   getDirectoryJournalist,
@@ -13,17 +13,31 @@ import { fetchRecentWork, formatWorkDate } from "@/lib/work";
 import { OwnershipChip } from "@/app/ownership/chip";
 import ShareButton from "./ShareButton";
 
+const DIM_PILLAR: Record<string, string> = {
+  headline_fidelity: "Seek Truth",
+  attribution_patterns: "Seek Truth",
+  hedging_language: "Seek Truth",
+  language_patterns: "Minimize Harm",
+  sentiment_differential: "Minimize Harm",
+  source_diversity: "Act Independently",
+  financial_conflicts: "Act Independently",
+  social_media_independence: "Act Independently",
+  corrections_frequency: "Be Accountable",
+  corrections_severity: "Be Accountable",
+  corrections_velocity: "Be Accountable",
+};
+
 function scoreColor(score: number | null): string {
   if (score === null) return "text-gray-400";
-  if (score >= 0.80) return "text-green-600";
-  if (score >= 0.70) return "text-yellow-600";
+  if (score >= 0.8) return "text-green-600";
+  if (score >= 0.7) return "text-yellow-600";
   return "text-red-600";
 }
 
 function ScoreBar({ score }: { score: number | null }) {
   if (score === null) return <p className="text-sm text-gray-400 italic">Insufficient data</p>;
   const pct = Math.round(score * 100);
-  const color = score >= 0.80 ? "bg-green-500" : score >= 0.70 ? "bg-yellow-500" : "bg-red-500";
+  const color = score >= 0.8 ? "bg-green-500" : score >= 0.7 ? "bg-yellow-500" : "bg-red-500";
   return (
     <div>
       <div className="flex items-baseline gap-2 mb-1">
@@ -34,6 +48,44 @@ function ScoreBar({ score }: { score: number | null }) {
         <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
+  );
+}
+
+function WorkLedger({ citations }: { citations: Citation[] }) {
+  if (!citations.length) {
+    return (
+      <p className="text-sm text-gray-400">
+        No validated citations on file yet. A flag only appears here when the quoted
+        sentence exists in the stored article body.
+      </p>
+    );
+  }
+  return (
+    <ul className="space-y-4">
+      {citations.map((c) => (
+        <li key={c.id} className="border-l-2 border-gray-200 pl-4">
+          <p className="text-xs text-gray-400 mb-1">
+            {DIM_PILLAR[c.dimension] || "Flag"} · {c.dimension.replace(/_/g, " ")}
+            {c.flag_type ? ` · ${c.flag_type.replace(/_/g, " ")}` : ""}
+          </p>
+          <blockquote className="text-sm text-gray-800 leading-relaxed">
+            “{c.cited_text}”
+          </blockquote>
+          {c.article_url ? (
+            <a
+              href={c.article_url}
+              className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {c.article_headline || c.article_url} ↗
+            </a>
+          ) : c.article_headline ? (
+            <p className="text-xs text-gray-400 mt-1">{c.article_headline}</p>
+          ) : null}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -58,9 +110,7 @@ export async function generateMetadata({
   if (!profile) return { title: "Fourth Estate Index" };
   const score = profile.pillar_scores?.composite_score ?? profile.composite_score;
   const scoreStr =
-    score !== null && score !== undefined
-      ? ` · FEI Score: ${Math.round(score * 100)}/100`
-      : "";
+    score !== null && score !== undefined ? ` · FEI Score: ${Math.round(score * 100)}/100` : "";
   return {
     title: `${profile.full_name} | Fourth Estate Index`,
     description: `Journalism standards score for ${profile.full_name} (${profile.primary_outlet})${scoreStr}`,
@@ -81,6 +131,15 @@ export default async function JournalistPage({
   const narrative = scores?.score_narrative;
   const outletSlug = seeded?.primary_outlet;
   const outletLabel = profile.primary_outlet || (outletSlug ? outletName(outletSlug) : null);
+  const correctionsIngested = (profile.corrections?.length ?? 0) > 0;
+  const pillar4 = scores ? (correctionsIngested ? scores.pillar_4_score : null) : null;
+  const composite =
+    scores && pillar4 !== null && scores.pillar_1_score != null && scores.pillar_2_score != null && scores.pillar_3_score != null
+      ? scores.composite_score
+      : scores?.composite_score != null && correctionsIngested
+        ? scores.composite_score
+        : null;
+  const citations = profile.citations ?? [];
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-16">
@@ -131,6 +190,9 @@ export default async function JournalistPage({
           ) : (
             <p>Listed in the directory. Full-text corpus still collecting.</p>
           )}
+          {scores?.methodology_version && (
+            <p>Methodology {scores.methodology_version}</p>
+          )}
         </div>
       </header>
 
@@ -164,13 +226,18 @@ export default async function JournalistPage({
             How this is scored →
           </Link>
         </div>
+        <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+          Partial rubric. Headline, attribution, language, and source diversity can score.
+          Hedging, sentiment differential, FEC, social advocacy, and corrections do not
+          count as 100 when they have not been run. Empty corrections ≠ perfect accountability.
+        </p>
         {scores ? (
           <div className="border border-gray-200 rounded-lg p-6">
-            {scores.composite_score !== null ? (
+            {composite !== null && composite !== undefined ? (
               <div className="text-center mb-6 pb-6 border-b border-gray-100">
                 <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Composite Score</p>
-                <span className={`text-7xl font-bold tabular-nums ${scoreColor(scores.composite_score)}`}>
-                  {Math.round(scores.composite_score * 100)}
+                <span className={`text-7xl font-bold tabular-nums ${scoreColor(composite)}`}>
+                  {Math.round(composite * 100)}
                 </span>
                 <p className="text-sm text-gray-400 mt-1">out of 100</p>
                 {narrative?.overall && (
@@ -180,7 +247,7 @@ export default async function JournalistPage({
             ) : (
               <div className="text-center mb-8 pb-6 border-b border-gray-100">
                 <p className="text-sm text-gray-400 italic">
-                  Composite score pending — not all pillars have sufficient data yet.
+                  Composite withheld — not every pillar has enough scored sub-points.
                 </p>
               </div>
             )}
@@ -189,7 +256,7 @@ export default async function JournalistPage({
                 { label: "Seek Truth & Report It", sublabel: "Pillar 1 · 30%", value: scores.pillar_1_score, narrativeKey: "pillar_1" },
                 { label: "Minimize Harm", sublabel: "Pillar 2 · 20%", value: scores.pillar_2_score, narrativeKey: "pillar_2" },
                 { label: "Act Independently", sublabel: "Pillar 3 · 30%", value: scores.pillar_3_score, narrativeKey: "pillar_3" },
-                { label: "Be Accountable", sublabel: "Pillar 4 · 20%", value: scores.pillar_4_score, narrativeKey: "pillar_4" },
+                { label: "Be Accountable", sublabel: "Pillar 4 · 20%", value: pillar4, narrativeKey: "pillar_4" },
               ].map(({ label, sublabel, value, narrativeKey }) => (
                 <div key={label}>
                   <p className="text-sm font-medium mb-0.5">{label}</p>
@@ -211,6 +278,15 @@ export default async function JournalistPage({
             </p>
           </div>
         )}
+      </section>
+
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold mb-2">Show the work</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Each line is a verbatim sentence from the stored corpus that moved a dimension.
+          No quote, no flag.
+        </p>
+        <WorkLedger citations={citations} />
       </section>
 
       <section className="mb-12">
@@ -272,7 +348,10 @@ export default async function JournalistPage({
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-400">No corrections on record.</p>
+          <p className="text-sm text-gray-400">
+            Corrections have not been ingested for this outlet. That is insufficient
+            data for Pillar 4 — not a perfect accountability score.
+          </p>
         )}
       </section>
     </main>
