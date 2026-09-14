@@ -3,6 +3,7 @@ import additions from "@/data/ownership-additions.json";
 import groups from "@/data/ownership-groups.json";
 import thirteenF from "@/data/ownership-13f.json";
 import pendingFile from "@/data/pending-control.json";
+import directoryOwnership from "@/data/ownership-directory.json";
 import contributionsFile from "@/data/contributions.json";
 import contributionAdds from "@/data/contributions-additions.json";
 import peopleFile from "@/data/people.json";
@@ -113,10 +114,22 @@ export interface PendingDeal {
   entities: string[];
 }
 
+export interface OwnershipChipModel {
+  outletSlug: string;
+  href: string;
+  line: string;
+  pending?: { headline: string };
+}
+
 const groupsFile = groups as {
   entities: OwnershipEntity[];
   edges: OwnershipEdge[];
   affiliations: Affiliation[];
+};
+
+const directoryFile = directoryOwnership as {
+  entities: OwnershipEntity[];
+  edges: OwnershipEdge[];
 };
 
 const people = {
@@ -133,6 +146,7 @@ const data: OwnershipGraph = {
     ...(graph as OwnershipGraph).entities,
     ...(additions.entities as OwnershipEntity[]),
     ...groupsFile.entities,
+    ...directoryFile.entities,
     ...people.entities,
   ],
   edges: [
@@ -140,6 +154,7 @@ const data: OwnershipGraph = {
     ...(additions.edges as OwnershipEdge[]),
     ...groupsFile.edges,
     ...((thirteenF as { edges: OwnershipEdge[] }).edges),
+    ...(directoryFile.edges ?? []),
   ],
 };
 
@@ -178,6 +193,16 @@ const GROUP_REACH: Record<string, string> = {
   "thomson-reuters": "Reuters newswire",
 };
 
+const DIRECTORY_TO_OWNERSHIP: Record<string, string> = {
+  "the-guardian": "the-guardian",
+  "new-york-post": "new-york-post",
+  "washington-examiner": "washington-examiner",
+  npr: "npr",
+  propublica: "propublica",
+  "texas-tribune": "texas-tribune",
+  "the-markup": "the-markup",
+};
+
 export function getGraph(): OwnershipGraph {
   return data;
 }
@@ -196,6 +221,36 @@ export function allPendingDeals(): PendingDeal[] {
 
 export function pendingDealsFor(slug: string): PendingDeal[] {
   return pending.deals.filter((d) => d.entities.includes(slug));
+}
+
+export function ownershipSlugForDirectory(directoryOutletSlug: string): string | undefined {
+  return DIRECTORY_TO_OWNERSHIP[directoryOutletSlug] ?? (getEntity(directoryOutletSlug)?.is_outlet ? directoryOutletSlug : undefined);
+}
+
+export function ownershipChipForDirectory(directoryOutletSlug: string): OwnershipChipModel | null {
+  const slug = ownershipSlugForDirectory(directoryOutletSlug);
+  if (!slug) return null;
+  const entity = getEntity(slug);
+  if (!entity) return null;
+  const snap = controlSnapshot(slug);
+  const parent = publicParent(slug);
+  const line =
+    snap.kind === "controller"
+      ? `${snap.label} · ${snap.detail}`
+      : snap.kind === "institutional"
+      ? parent
+        ? `${snap.label}${snap.topHolders[0] ? ` · ${snap.topHolders[0].entity.name} ${formatPct(snap.topHolders[0].pct)}` : ""}`
+        : snap.label
+      : `${snap.label} · ${snap.detail}`;
+  const pendingDeal =
+    pendingDealsFor(slug)[0] ??
+    (parent ? pendingDealsFor(parent.slug)[0] : undefined);
+  return {
+    outletSlug: slug,
+    href: `/ownership/${slug}`,
+    line,
+    pending: pendingDeal ? { headline: pendingDeal.headline } : undefined,
+  };
 }
 
 export function officersOf(orgSlug: string): { person: OwnershipEntity; role: string }[] {
@@ -410,7 +465,7 @@ export function controlSnapshot(outletSlug: string): ControlSnapshot {
     kind: "closed",
     label: tail && tail.slug !== outletSlug ? tail.name : "Private / nonprofit",
     detail: tail?.type === "trust" ? "Trust — no residual shareholders" : "No public float",
-    href: tail && tail.slug !== outletSlug ? `/ownership/${tail.slug}` : undefined,
+    href: tail && tail.slug !== outletSlug ? `/ownership/${tail.slug}` : `/ownership/${outletSlug}`,
     topHolders: [],
     top3Economic: 100,
   };
