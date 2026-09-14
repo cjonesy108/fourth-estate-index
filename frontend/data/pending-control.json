@@ -1,0 +1,39 @@
+{
+  "as_of": "2026-09-13",
+  "rule": "Announced is not closed. The graph shows who controls the outlet today, not who would if a deal finished.",
+  "deals": [
+    {
+      "id": "paramount-wbd",
+      "status": "paused",
+      "headline": "Paramount–WBD is not closed",
+      "body": "DOJ cleared Paramount Skydance's purchase of Warner Bros. Discovery in June 2026. Twelve state attorneys general sued in July. Paramount stipulated it will not close until a trial ruling or 1 June 2027, whichever comes first. Trial is set for March 2027. CNN stays at WBD. The Ellison family does not control CNN today.",
+      "closes_no_earlier_than": "2027-03-01",
+      "source_url": "https://www.cnn.com/2026/07/24/media/paramount-warner-bros-discovery-merger-delay",
+      "source_label": "Paramount stipulation / CNN, 24 Jul 2026",
+      "entities": [
+        "cnn",
+        "cnn-worldwide",
+        "warner-bros-discovery",
+        "cbs-news",
+        "paramount-skydance",
+        "ellison-family"
+      ]
+    },
+    {
+      "id": "comcast-nbcu-spin",
+      "status": "announced",
+      "headline": "NBCUniversal spin is announced, not closed",
+      "body": "Comcast said 29 June 2026 it will tax-free spin NBCUniversal and Sky into a separate public company around mid-2027. Dual-class Roberts control is planned to carry over. NBC News and MSNBC remain inside Comcast until that closes.",
+      "closes_no_earlier_than": "2027-06-01",
+      "source_url": "https://www.cmcsa.com/news-releases/news-release-details/comcast-announces-plans-separate-media-and-technology-businesses",
+      "source_label": "Comcast, 29 Jun 2026",
+      "entities": [
+        "nbc-news",
+        "msnbc",
+        "nbcuniversal",
+        "comcast",
+        "roberts-family"
+      ]
+    }
+  ]
+}

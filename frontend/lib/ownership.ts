@@ -2,6 +2,7 @@ import graph from "@/data/ownership.json";
 import additions from "@/data/ownership-additions.json";
 import groups from "@/data/ownership-groups.json";
 import thirteenF from "@/data/ownership-13f.json";
+import pendingFile from "@/data/pending-control.json";
 import contributionsFile from "@/data/contributions.json";
 import contributionAdds from "@/data/contributions-additions.json";
 import peopleFile from "@/data/people.json";
@@ -96,6 +97,20 @@ export interface MediaGroup {
   outlets: OwnershipEntity[];
   reach: string;
   snapshot: ControlSnapshot;
+  pending: PendingDeal[];
+}
+
+export type PendingStatus = "paused" | "announced";
+
+export interface PendingDeal {
+  id: string;
+  status: PendingStatus;
+  headline: string;
+  body: string;
+  closes_no_earlier_than: string | null;
+  source_url: string;
+  source_label: string;
+  entities: string[];
 }
 
 const groupsFile = groups as {
@@ -138,6 +153,12 @@ const contributions = {
   ],
 };
 
+const pending = pendingFile as {
+  as_of: string;
+  rule: string;
+  deals: PendingDeal[];
+};
+
 const entitiesBySlug = new Map(data.entities.map((e) => [e.slug, e]));
 
 const GROUP_REACH: Record<string, string> = {
@@ -163,6 +184,18 @@ export function getGraph(): OwnershipGraph {
 
 export function getContributionsMeta() {
   return { as_of: contributions.as_of, rule: contributions.rule };
+}
+
+export function getPendingMeta() {
+  return { as_of: pending.as_of, rule: pending.rule };
+}
+
+export function allPendingDeals(): PendingDeal[] {
+  return pending.deals;
+}
+
+export function pendingDealsFor(slug: string): PendingDeal[] {
+  return pending.deals.filter((d) => d.entities.includes(slug));
 }
 
 export function officersOf(orgSlug: string): { person: OwnershipEntity; role: string }[] {
@@ -224,6 +257,7 @@ export function listMediaGroups(): MediaGroup[] {
         outlets,
         reach: GROUP_REACH[slug],
         snapshot: controlSnapshot(probe),
+        pending: pendingDealsFor(slug),
       } as MediaGroup;
     })
     .filter((g): g is MediaGroup => g !== null)
@@ -434,4 +468,9 @@ export const VIA_LABEL: Record<PowerLink["via"], string> = {
   voting: "Voting control",
   economic: "Economic stake",
   office: "Office",
+};
+
+export const PENDING_LABEL: Record<PendingStatus, string> = {
+  paused: "Paused — not closed",
+  announced: "Announced — not closed",
 };

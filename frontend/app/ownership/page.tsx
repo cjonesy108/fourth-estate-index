@@ -3,11 +3,14 @@ import { Metadata } from "next";
 import { OutletExplorer } from "./explorer";
 import {
   LAYER_LABEL,
+  PENDING_LABEL,
   allContributions,
+  allPendingDeals,
   formatPct,
   getContributionsMeta,
   getEntity,
   getGraph,
+  getPendingMeta,
   institutionHoldings,
   listControllers,
   listInstitutions,
@@ -30,6 +33,8 @@ export default function OwnershipIndex() {
   const giving = allContributions();
   const meta = getContributionsMeta();
   const mediaGroups = listMediaGroups();
+  const pending = allPendingDeals();
+  const pendingMeta = getPendingMeta();
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-16">
@@ -47,6 +52,27 @@ export default function OwnershipIndex() {
       </header>
 
       <section className="mb-16">
+        <h2 className="text-xl font-semibold mb-2">Pending control</h2>
+        <p className="text-sm text-gray-500 mb-6">{pendingMeta.rule}</p>
+        <ul className="space-y-3">
+          {pending.map((d) => (
+            <li key={d.id} className="border border-amber-200 bg-amber-50/60 rounded-lg p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+                <p className="font-semibold">{d.headline}</p>
+                <span className="text-xs uppercase tracking-wide text-amber-800">{PENDING_LABEL[d.status]}</span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed mb-2">{d.body}</p>
+              <p className="text-xs text-gray-400">
+                <a href={d.source_url} className="hover:underline" target="_blank" rel="noreferrer">
+                  {d.source_label}
+                </a>
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="mb-16">
         <h2 className="text-xl font-semibold mb-2">Groups</h2>
         <p className="text-sm text-gray-500 mb-6">
           One parent, many newsrooms. Group nodes are not a full FCC census.
@@ -59,7 +85,10 @@ export default function OwnershipIndex() {
                   {g.entity.name}
                   {g.entity.ticker ? ` (${g.entity.ticker})` : ""}
                 </Link>
-                <span className="text-xs text-gray-400">{g.outlets.length} title{g.outlets.length === 1 ? "" : "s"}</span>
+                <span className="text-xs text-gray-400">
+                  {g.pending.length > 0 ? "Pending · " : ""}
+                  {g.outlets.length} title{g.outlets.length === 1 ? "" : "s"}
+                </span>
               </div>
               <p className="text-xs text-gray-500 mt-1">{g.reach}</p>
               <p className="text-sm text-gray-700 mt-2">
