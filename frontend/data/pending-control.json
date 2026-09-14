@@ -1,6 +1,6 @@
 {
   "as_of": "2026-09-13",
-  "rule": "Announced is not closed. The graph shows who controls the outlet today, not who would if a deal finished.",
+  "rule": "Announced is not closed. Closed is not combined operations when a court has said otherwise. The graph shows who controls the outlet today.",
   "deals": [
     {
       "id": "paramount-wbd",
@@ -33,6 +33,23 @@
         "nbcuniversal",
         "comcast",
         "roberts-family"
+      ]
+    },
+    {
+      "id": "nexstar-tegna",
+      "status": "hold_separate",
+      "headline": "Nexstar owns TEGNA — operations stay separate",
+      "body": "Nexstar closed the $6.2 billion TEGNA purchase on 19 March 2026 after FCC Media Bureau approval. TGNA was delisted. On 17 April 2026 Judge Troy L. Nunley in the Eastern District of California ordered Nexstar to keep TEGNA operating as a separate, independently managed unit while states' antitrust litigation proceeds. Legal parent is Nexstar. Combined operations are not approved.",
+      "closes_no_earlier_than": null,
+      "source_url": "https://investors.tegna.com/",
+      "source_label": "TEGNA IR / ED Cal hold-separate, Apr 2026",
+      "entities": [
+        "tegna",
+        "tegna-local-stations",
+        "wusa",
+        "kpnx",
+        "nexstar",
+        "nexstar-local-stations"
       ]
     }
   ]
