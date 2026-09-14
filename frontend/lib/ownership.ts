@@ -8,6 +8,7 @@ import directoryOwnership from "@/data/ownership-directory.json";
 import contributionsFile from "@/data/contributions.json";
 import contributionAdds from "@/data/contributions-additions.json";
 import contributionOfficers from "@/data/contributions-officers.json";
+import contributionEllison from "@/data/contributions-ellison.json";
 import peopleFile from "@/data/people.json";
 
 export type EntityType =
@@ -167,15 +168,17 @@ const data: OwnershipGraph = {
 };
 
 const officerFile = contributionOfficers as { as_of?: string; records: ContributionRecord[] };
+const ellisonFile = contributionEllison as { as_of?: string; records: ContributionRecord[] };
 
 const contributions = {
-  as_of: officerFile.as_of ?? (contributionsFile as { as_of: string }).as_of,
+  as_of: ellisonFile.as_of ?? officerFile.as_of ?? (contributionsFile as { as_of: string }).as_of,
   rule:
     "Firm PAC, controller, and named officer are three different checkbooks. Opening CNN does not open Fink. Clicking through BlackRock does.",
   records: [
     ...(contributionsFile as { records: ContributionRecord[] }).records,
     ...(contributionAdds as { records: ContributionRecord[] }).records,
     ...officerFile.records,
+    ...ellisonFile.records,
   ],
 };
 
