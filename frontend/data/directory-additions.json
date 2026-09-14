@@ -1,4 +1,6 @@
 {
+  "version": "0.4.1",
+  "as_of": "2026-09-13",
   "outlets": [
     {
       "slug": "propublica",
@@ -18,6 +20,15 @@
       "text_policy": "Nonprofit public-service newsroom. Author RSS at /author/{slug}/feed/ and WordPress REST API supply public full text. No login.",
       "author_url_template": "https://www.texastribune.org/author/{author_slug}/",
       "corrections_url": "https://www.texastribune.org/series/corrections/"
+    },
+    {
+      "slug": "npr",
+      "name": "NPR",
+      "domain": "npr.org",
+      "api_source": "npr",
+      "access": "full_public",
+      "text_policy": "Most text stories are publicly readable. API/RSS first, no login.",
+      "author_url_template": "https://www.npr.org/people/{author_slug}"
     }
   ],
   "journalists": [
@@ -38,5 +49,13 @@
     {"slug":"alejandro-serrano","full_name":"Alejandro Serrano","aliases":["Alejandro Serrano"],"primary_outlet":"texas-tribune","beat":"Politics","directory_status":"listed","author_slug":"alejandro-serrano","author_url":"https://www.texastribune.org/author/alejandro-serrano/","feed_url":"https://www.texastribune.org/author/alejandro-serrano/feed/","x_handle":null},
     {"slug":"gabby-birenbaum","full_name":"Gabby Birenbaum","aliases":["Gabby Birenbaum"],"primary_outlet":"texas-tribune","beat":"Washington","directory_status":"listed","author_slug":"gabby-birenbaum","author_url":"https://www.texastribune.org/author/gabby-birenbaum/","feed_url":"https://www.texastribune.org/author/gabby-birenbaum/feed/","x_handle":null},
     {"slug":"emily-foxhall","full_name":"Emily Foxhall","aliases":["Emily Foxhall"],"primary_outlet":"texas-tribune","beat":"Climate","directory_status":"listed","author_slug":"emily-foxhall","author_url":"https://www.texastribune.org/author/emily-foxhall/","feed_url":"https://www.texastribune.org/author/emily-foxhall/feed/","x_handle":null},
+    {"slug":"uriel-j-garcia","full_name":"Uriel J. García","aliases":["Uriel J. García","Uriel Garcia","Uriel J. Garcia"],"primary_outlet":"texas-tribune","beat":"Immigration","directory_status":"listed","author_slug":"uriel-j-garcia","author_url":"https://www.texastribune.org/author/uriel-j-garcia/","feed_url":"https://www.texastribune.org/author/uriel-j-garcia/feed/","x_handle":null},
+    {"slug":"lomi-kriel","full_name":"Lomi Kriel","aliases":["Lomi Kriel"],"primary_outlet":"texas-tribune","beat":"Investigations","directory_status":"listed","author_slug":"lomi-kriel","author_url":"https://www.texastribune.org/author/lomi-kriel/","feed_url":"https://www.texastribune.org/author/lomi-kriel/feed/","x_handle":null},
+    {"slug":"perla-trevizo","full_name":"Perla Trevizo","aliases":["Perla Trevizo"],"primary_outlet":"texas-tribune","beat":"Investigations · ProPublica unit","directory_status":"listed","author_slug":"perla-trevizo","author_url":"https://www.texastribune.org/author/perla-trevizo/","feed_url":"https://www.texastribune.org/author/perla-trevizo/feed/","x_handle":null},
+    {"slug":"jeremy-schwartz","full_name":"Jeremy Schwartz","aliases":["Jeremy Schwartz"],"primary_outlet":"texas-tribune","beat":"Investigations · ProPublica unit","directory_status":"listed","author_slug":"jeremy-schwartz","author_url":"https://www.texastribune.org/author/jeremy-schwartz/","feed_url":"https://www.texastribune.org/author/jeremy-schwartz/feed/","x_handle":null},
+    {"slug":"alejandra-martinez","full_name":"Alejandra Martinez","aliases":["Alejandra Martinez"],"primary_outlet":"texas-tribune","beat":"Environment","directory_status":"listed","author_slug":"alejandra-martinez","author_url":"https://www.texastribune.org/author/alejandra-martinez/","feed_url":"https://www.texastribune.org/author/alejandra-martinez/feed/","x_handle":null},
+    {"slug":"paul-cobler","full_name":"Paul Cobler","aliases":["Paul Cobler"],"primary_outlet":"texas-tribune","beat":"Economy","directory_status":"listed","author_slug":"paul-cobler","author_url":"https://www.texastribune.org/author/paul-cobler/","feed_url":"https://www.texastribune.org/author/paul-cobler/feed/","x_handle":null},
+    {"slug":"megan-menchaca","full_name":"Megan Menchaca","aliases":["Megan Menchaca"],"primary_outlet":"texas-tribune","beat":"K-12 education","directory_status":"listed","author_slug":"megan-menchaca","author_url":"https://www.texastribune.org/author/megan-menchaca/","feed_url":"https://www.texastribune.org/author/megan-menchaca/feed/","x_handle":null},
+    {"slug":"jaclyn-diaz","full_name":"Jaclyn Diaz","aliases":["Jaclyn Diaz"],"primary_outlet":"npr","beat":"Newshub / criminal justice","directory_status":"listed","author_slug":"930959243/jaclyn-diaz","author_url":"https://www.npr.org/people/930959243/jaclyn-diaz","x_handle":null}
   ]
 }
