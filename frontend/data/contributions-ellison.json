@@ -1,0 +1,28 @@
+{
+  "as_of": "2026-09-13",
+  "rule_extra": "Larry and David Ellison are separate checkbooks from each other and from CBS News. Opening CBS does not open these rows; clicking through Paramount Skydance or the family does.",
+  "records": [
+    {
+      "entity": "larry-ellison",
+      "layer": "individual",
+      "cycle": "2022-2024",
+      "amount_usd": 31000000,
+      "amount_label": ">$30M outside money since 2021, mostly Tim Scott",
+      "party_lean": "R",
+      "summary": "Larry Ellison's federal file is Super PAC scale on the Republican side: OpenSecrets put him 11th among 2022 megadonors (~$31M outside). The largest recent slice is more than $30M since 2021 into Opportunity Matters Fund (Tim Scott). Also $1M to Lindsey Graham's Security is Strength in 2025, NRSC/NRCC max-outs in Jun 2024. No itemized gift to Trump's campaign committee. Not CBS News and not Oracle PAC.",
+      "source_url": "https://www.opensecrets.org/news/2025/09/oracle-invested-millions-in-government-influence-before-winning-a-major-stake-in-tiktok/",
+      "source_label": "OpenSecrets, Sep 2025 / FEC"
+    },
+    {
+      "entity": "david-ellison",
+      "layer": "individual",
+      "cycle": "2024",
+      "amount_usd": 929600,
+      "amount_label": "$929.6k Harris Victory Fund + DNC/state parties",
+      "party_lean": "D",
+      "summary": "David Ellison's 2024 window leans the other way from Larry: $929,600 to Harris Victory Fund (27 Feb 2024), plus DNC hard-money max-outs and $10k gifts to state Democratic parties the same day. CNN and CNBC reported the victory-fund figure. Different checkbook from Larry and from CBS News. The WBD deal is still paused — this is not CNN money.",
+      "source_url": "https://www.cnn.com/2025/09/26/media/larry-ellison-david-ellison-trump",
+      "source_label": "CNN, Sep 2025 / FEC"
+    }
+  ]
+}
