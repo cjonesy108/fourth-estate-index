@@ -23,6 +23,7 @@ import {
   pendingDealsFor,
   publicParent,
 } from "@/lib/ownership";
+import { LINE_KIND_LABEL, formatUsd, lineItemsFor } from "@/lib/fec-line-items";
 
 export function generateStaticParams() {
   return getGraph().entities.map((e) => ({ slug: e.slug }));
@@ -264,22 +265,49 @@ export default function OwnershipEntityPage({ params }: { params: { slug: string
       {giving.length > 0 && (
         <section className="mb-12">
           <h2 className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-2">Political money for this entity</h2>
-          <p className="text-sm text-gray-500 mb-4">Only the checkbooks that belong here — not every holder on the chain.</p>
+          <p className="text-sm text-gray-500 mb-4">Only the checkbooks that belong here — not every holder on the chain. Line items stay on the giver.</p>
           <ul className="space-y-4">
-            {giving.map((g) => (
-              <li key={`${g.entity}-${g.layer}-${g.cycle}`} className="border border-gray-100 rounded-lg p-4">
-                <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
-                  <Link href={`/ownership/${g.entity}`} className="font-medium hover:underline">
-                    {getEntity(g.entity)?.name ?? g.entity}
-                  </Link>
-                  <span className="text-xs text-gray-400">{LAYER_LABEL[g.layer]}</span>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">{g.summary}</p>
-                <p className="text-xs text-gray-400">
-                  {g.amount_label} · <a href={g.source_url} className="hover:underline" target="_blank" rel="noreferrer">{g.source_label}</a>
-                </p>
-              </li>
-            ))}
+            {giving.map((g) => {
+              const items = lineItemsFor(g.entity);
+              return (
+                <li key={`${g.entity}-${g.layer}-${g.cycle}`} className="border border-gray-100 rounded-lg p-4">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+                    <Link href={`/ownership/${g.entity}`} className="font-medium hover:underline">
+                      {getEntity(g.entity)?.name ?? g.entity}
+                    </Link>
+                    <span className="text-xs text-gray-400">{LAYER_LABEL[g.layer]}</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">{g.summary}</p>
+                  <p className="text-xs text-gray-400">
+                    {g.amount_label} · <a href={g.source_url} className="hover:underline" target="_blank" rel="noreferrer">{g.source_label}</a>
+                  </p>
+                  {items.length > 0 && (
+                    <table className="w-full text-sm mt-4 border-t border-gray-100">
+                      <thead>
+                        <tr className="text-left text-xs uppercase tracking-wide text-gray-400">
+                          <th className="pt-3 pr-3 font-medium">Date</th>
+                          <th className="pt-3 pr-3 font-medium">Amount</th>
+                          <th className="pt-3 pr-3 font-medium">Recipient</th>
+                          <th className="pt-3 font-medium">Kind</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map((row) => (
+                          <tr key={`${row.entity}-${row.date}-${row.recipient}-${row.amount_usd}`}>
+                            <td className="py-2 pr-3 text-xs text-gray-400 tabular-nums">{formatAsOf(row.date)}</td>
+                            <td className="py-2 pr-3 tabular-nums">{formatUsd(row.amount_usd)}</td>
+                            <td className="py-2 pr-3">
+                              <a href={row.source_url} className="hover:underline" target="_blank" rel="noreferrer">{row.recipient}</a>
+                            </td>
+                            <td className="py-2 text-xs text-gray-400">{LINE_KIND_LABEL[row.recipient_type]}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
