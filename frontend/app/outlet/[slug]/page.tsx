@@ -10,6 +10,7 @@ import {
   listDirectoryOutlets,
   mergeJournalistList,
 } from "@/lib/directory";
+import { OwnershipChip } from "@/app/ownership/chip";
 
 export function generateStaticParams() {
   return listDirectoryOutlets().map((o) => ({ slug: o.slug }));
@@ -97,6 +98,9 @@ export default async function OutletPage({
         <p className="text-gray-400 text-sm mb-3">
           {outlet.journalist_count} journalist{outlet.journalist_count !== 1 ? "s" : ""} in directory
         </p>
+        <div className="mb-3">
+          <OwnershipChip directoryOutletSlug={params.slug} />
+        </div>
         <p className="text-sm text-gray-500 leading-relaxed max-w-2xl">
           {seeded.text_policy}
         </p>

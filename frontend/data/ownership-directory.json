@@ -1,0 +1,33 @@
+{
+  "note": "Directory outlets that were missing from the ownership graph. Independent nonprofits — no residual shareholders, no public float.",
+  "entities": [
+    {
+      "slug": "propublica",
+      "name": "ProPublica",
+      "type": "outlet",
+      "is_outlet": true,
+      "ticker": null,
+      "control_summary": "Independent 501(c)(3) newsroom. No residual shareholders. Funded by donations and grants, not a family or public issuer.",
+      "notes": "Not a Murdoch / Bezos / Ellison property."
+    },
+    {
+      "slug": "texas-tribune",
+      "name": "The Texas Tribune",
+      "type": "outlet",
+      "is_outlet": true,
+      "ticker": null,
+      "control_summary": "Independent 501(c)(3) public-service newsroom. No residual shareholders.",
+      "notes": null
+    },
+    {
+      "slug": "the-markup",
+      "name": "The Markup",
+      "type": "outlet",
+      "is_outlet": true,
+      "ticker": null,
+      "control_summary": "Independent nonprofit newsroom. No residual shareholders.",
+      "notes": null
+    }
+  ],
+  "edges": []
+}
