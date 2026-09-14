@@ -1,0 +1,18 @@
+#fei-root { position: fixed; right: 16px; bottom: 16px; z-index: 2147483646; font-family: "Open Sans", "Segoe UI", sans-serif; color: #3c382f; }
+#fei-root * { box-sizing: border-box; }
+.fei-chip { display: flex; align-items: center; gap: 8px; border: 1px solid #d8cfbb; background: #fbf9f2; color: #211f19; padding: 6px 10px; border-radius: 2px; cursor: pointer; box-shadow: 0 4px 14px rgba(13, 31, 52, 0.12); letter-spacing: 0.08em; }
+.fei-chip-kicker { font-size: 10px; font-weight: 700; color: #274b71; }
+.fei-chip-score { font-family: Georgia, serif; font-size: 16px; letter-spacing: 0; }
+.fei-panel { position: absolute; right: 0; bottom: 44px; width: 320px; max-height: 70vh; overflow: auto; background: #fbf9f2; border: 1px solid #d8cfbb; box-shadow: 0 8px 24px rgba(13, 31, 52, 0.16); padding: 16px 16px 12px; }
+.fei-kicker, .fei-label { margin: 0; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #6a6455; }
+.fei-outlet { margin: 4px 0 0; font-size: 12px; color: #274b71; }
+.fei-block { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e9e2d2; }
+.fei-title, .fei-name { margin: 6px 0 0; font-family: Georgia, serif; font-size: 16px; line-height: 1.3; color: #211f19; }
+.fei-beat { margin: 2px 0 0; font-size: 12px; color: #6a6455; }
+.fei-big { margin: 8px 0 0; font-family: Georgia, serif; font-size: 36px; line-height: 1; color: #142c47; }
+.fei-note, .fei-notes p { margin: 8px 0 0; font-size: 12px; line-height: 1.45; color: #6a6455; }
+.fei-pillar { margin-top: 8px; }
+.fei-pillar-meta { display: flex; justify-content: space-between; font-size: 11px; color: #3c382f; }
+.fei-bar { height: 3px; background: #e9e2d2; margin-top: 4px; }
+.fei-bar-fill { height: 3px; background: #1d3b5e; }
+.fei-link { display: inline-block; margin-top: 10px; font-size: 12px; color: #274b71; }

@@ -1,0 +1,69 @@
+:root {
+  --navy: #142c47;
+  --ink: #211f19;
+  --muted: #6a6455;
+  --paper: #fbf9f2;
+  --rule: #e9e2d2;
+}
+
+html,
+body {
+  margin: 0;
+  width: 340px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Open Sans", "Segoe UI", sans-serif;
+}
+
+main {
+  padding: 16px;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+h1 {
+  margin: 8px 0 0;
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.muted,
+.note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.block {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+.label {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9b9484;
+}
+
+.big {
+  margin: 6px 0 0;
+  font-family: Georgia, serif;
+  font-size: 40px;
+  color: var(--navy);
+}
+
+a {
+  color: #274b71;
+  font-size: 12px;
+}

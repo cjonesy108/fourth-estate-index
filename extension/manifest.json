@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Fourth Estate Index",
+  "version": "0.1.0",
+  "description": "SPJ-grounded scores for the article and journalist on the page you are reading.",
+  "action": {
+    "default_title": "Fourth Estate Index",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["activeTab", "storage", "tabs"],
+  "host_permissions": [
+    "https://fourth-estate-index.vercel.app/*",
+    "http://localhost:3000/*",
+    "https://*/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://*/*", "http://localhost/*"],
+      "exclude_matches": [
+        "https://fourth-estate-index.vercel.app/*"
+      ],
+      "js": ["extract.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

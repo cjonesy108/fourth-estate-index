@@ -4,7 +4,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api.routes import journalists, methodology, outlets, ownership
+from backend.api.routes import journalists, methodology, outlets, ownership, lookup
 
 app = FastAPI(
     title="Fourth Estate Index API",
@@ -19,7 +19,8 @@ app.add_middleware(
         "http://localhost:3001",
         "https://fourth-estate-index.vercel.app",
     ],
-    allow_methods=["GET", "POST"],
+    allow_origin_regex=r"^chrome-extension://.*$",
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -27,6 +28,7 @@ app.include_router(journalists.router, prefix="/api/journalists", tags=["journal
 app.include_router(outlets.router,    prefix="/api/outlets",     tags=["outlets"])
 app.include_router(methodology.router, prefix="/api/methodology", tags=["methodology"])
 app.include_router(ownership.router,   prefix="/api/ownership",   tags=["ownership"])
+app.include_router(lookup.router,      prefix="/api/lookup",      tags=["lookup"])
 
 
 @app.get("/api/health")
