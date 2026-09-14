@@ -8,6 +8,7 @@ Usage:
 
 import asyncio
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -39,13 +40,12 @@ from backend.scoring.pillar_scorer import build_pillar_scores
 DATE_FROM = datetime(2023, 1, 1)
 DATE_TO = datetime(2026, 8, 31)
 ROOT = Path(__file__).resolve().parents[1]
+METHODOLOGY = os.environ.get("METHODOLOGY_VERSION", "1.1-partial")
 
 
 def load_cohort() -> list[dict]:
-    base = json.loads((ROOT / "frontend/data/directory.json").read_text())
     extra = json.loads((ROOT / "frontend/data/directory-additions.json").read_text())
-    people = [j for j in extra.get("journalists", []) if j.get("primary_outlet") == "propublica"]
-    return people
+    return [j for j in extra.get("journalists", []) if j.get("primary_outlet") == "propublica"]
 
 
 async def run_journalist(conn, publication_id: str, journalist: dict):
@@ -145,9 +145,22 @@ async def run_journalist(conn, publication_id: str, journalist: dict):
     dimension_results["source_diversity"] = sd_score
     print(f"  Source diversity: {sd_score}")
 
-    correction_scores = score_corrections([], corpus_size=corpus_size)
+    stored_corrections = await conn.fetch(
+        "SELECT correction_type, days_to_correction FROM corrections WHERE journalist_id = $1",
+        journalist_id,
+    )
+    ingested = len(stored_corrections) > 0
+    correction_scores = score_corrections(
+        [dict(r) for r in stored_corrections],
+        corpus_size=corpus_size,
+        ingested=ingested,
+    )
     dimension_results["corrections_frequency"] = correction_scores["corrections_frequency"]
     dimension_results["corrections_severity"] = correction_scores["corrections_severity"]
+    dimension_results["corrections_velocity"] = correction_scores.get("corrections_velocity")
+    print(
+        f"  Corrections ingested={ingested} count={correction_scores.get('corrections_count', 0)}"
+    )
 
     scores = build_pillar_scores(dimension_results)
     await save_pillar_scores(
@@ -155,17 +168,18 @@ async def run_journalist(conn, publication_id: str, journalist: dict):
         journalist_id,
         scores,
         corpus_size=corpus_size,
-        methodology_version="1.0",
+        methodology_version=METHODOLOGY,
     )
+    status = "scored" if scores.get("composite_score") is not None else "insufficient"
     await conn.execute(
         "UPDATE journalists SET data_status = $1, updated_at = NOW() WHERE id = $2",
-        "scored",
+        status,
         journalist_id,
     )
     print(
         f"  P1: {scores['pillar_1_score']}  P2: {scores['pillar_2_score']}  "
         f"P3: {scores['pillar_3_score']}  P4: {scores['pillar_4_score']}  "
-        f"Composite: {scores['composite_score']}"
+        f"Composite: {scores['composite_score']}  rubric={scores.get('rubric_status')}"
     )
 
 

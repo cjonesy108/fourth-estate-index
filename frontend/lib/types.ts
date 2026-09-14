@@ -25,6 +25,7 @@ export interface PillarScores {
   methodology_version: string;
   scored_at: string;
   score_narrative: Record<string, string> | null;
+  rubric_status?: string | null;
 }
 
 export interface FECRecord {
@@ -66,6 +67,7 @@ export interface Citation {
   article_id: string | null;
   article_url: string | null;
   article_headline: string | null;
+  article_published_at?: string | null;
 }
 
 export interface OutletSummary {
@@ -89,6 +91,7 @@ export interface JournalistProfile extends JournalistSummary {
   fec_records: FECRecord[];
   corrections: Correction[];
   appeals: Appeal[];
+  citations?: Citation[];
   corpus_size: number | null;
   corpus_start: string | null;
   corpus_end: string | null;
