@@ -4,6 +4,8 @@ Database query functions for the API layer.
 
 from typing import Optional
 import asyncpg
+import json
+import re
 
 
 async def get_conn(dsn: str) -> asyncpg.Connection:
@@ -34,7 +36,6 @@ async def list_journalists(conn) -> list[dict]:
 
 
 def _outlet_slug(name: str) -> str:
-    import re
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
@@ -64,19 +65,14 @@ async def list_outlets(conn) -> list[dict]:
         ORDER BY j.primary_outlet
         """
     )
-    return [
-        {**dict(r), "slug": _outlet_slug(r["name"])}
-        for r in rows
-    ]
+    return [{**dict(r), "slug": _outlet_slug(r["name"])} for r in rows]
 
 
 async def get_outlet_profile(conn, slug: str) -> Optional[dict]:
-    # Pull all outlets and find the one matching the slug
     outlets = await list_outlets(conn)
     outlet = next((o for o in outlets if o["slug"] == slug), None)
     if not outlet:
         return None
-
     name = outlet["name"]
     journalists = await conn.fetch(
         """
@@ -99,18 +95,40 @@ async def get_outlet_profile(conn, slug: str) -> Optional[dict]:
         """,
         name,
     )
-
     return {
         "name": name,
         "slug": slug,
         "journalist_count": outlet["journalist_count"],
-        "avg_composite":  outlet["avg_composite"],
-        "avg_pillar_1":   outlet["avg_pillar_1"],
-        "avg_pillar_2":   outlet["avg_pillar_2"],
-        "avg_pillar_3":   outlet["avg_pillar_3"],
-        "avg_pillar_4":   outlet["avg_pillar_4"],
-        "journalists":    [dict(j) for j in journalists],
+        "avg_composite": outlet["avg_composite"],
+        "avg_pillar_1": outlet["avg_pillar_1"],
+        "avg_pillar_2": outlet["avg_pillar_2"],
+        "avg_pillar_3": outlet["avg_pillar_3"],
+        "avg_pillar_4": outlet["avg_pillar_4"],
+        "journalists": [dict(j) for j in journalists],
     }
+
+
+async def get_citations_for_journalist(conn, journalist_id) -> list[dict]:
+    rows = await conn.fetch(
+        """
+        SELECT DISTINCT ON (c.dimension, c.cited_text)
+            c.id, c.cited_text, c.dimension, c.flag_type, c.flag_value,
+            a.id AS article_id,
+            COALESCE(a.url, a.guardian_id) AS article_url,
+            a.headline AS article_headline,
+            a.published_at AS article_published_at
+        FROM citations c
+        JOIN analysis_results ar ON ar.id = c.analysis_result_id
+        LEFT JOIN articles a ON a.id = c.article_id
+        WHERE ar.journalist_id = $1
+          AND c.cited_text IS NOT NULL
+          AND length(c.cited_text) > 12
+        ORDER BY c.dimension, c.cited_text, ar.scored_at DESC
+        LIMIT 80
+        """,
+        journalist_id,
+    )
+    return [dict(r) for r in rows]
 
 
 async def get_journalist_profile(conn, slug: str) -> Optional[dict]:
@@ -135,17 +153,14 @@ async def get_journalist_profile(conn, slug: str) -> Optional[dict]:
         "SELECT * FROM fec_records WHERE journalist_id = $1 ORDER BY contribution_date DESC",
         jid,
     )
-
     corrections = await conn.fetch(
         "SELECT * FROM corrections WHERE journalist_id = $1 ORDER BY corrected_at DESC",
         jid,
     )
-
     appeals = await conn.fetch(
         "SELECT * FROM appeals WHERE journalist_id = $1 AND published = true ORDER BY submitted_at DESC",
         jid,
     )
-
     corpus = await conn.fetchrow(
         """
         SELECT COUNT(*) as size, MIN(published_at) as start, MAX(published_at) as end
@@ -153,13 +168,15 @@ async def get_journalist_profile(conn, slug: str) -> Optional[dict]:
         """,
         jid,
     )
+    citations = await get_citations_for_journalist(conn, jid)
 
     scores_dict = dict(scores) if scores else None
     if scores_dict and scores_dict.get("score_narrative"):
-        # asyncpg returns JSONB as a string — parse it
         if isinstance(scores_dict["score_narrative"], str):
-            import json
             scores_dict["score_narrative"] = json.loads(scores_dict["score_narrative"])
+    if scores_dict and scores_dict.get("dimensions_scored"):
+        if isinstance(scores_dict["dimensions_scored"], str):
+            scores_dict["dimensions_scored"] = json.loads(scores_dict["dimensions_scored"])
 
     return {
         "journalist": dict(journalist),
@@ -167,6 +184,7 @@ async def get_journalist_profile(conn, slug: str) -> Optional[dict]:
         "fec_records": [dict(r) for r in fec],
         "corrections": [dict(r) for r in corrections],
         "appeals": [dict(r) for r in appeals],
+        "citations": citations,
         "corpus_size": corpus["size"] if corpus else 0,
         "corpus_start": corpus["start"] if corpus else None,
         "corpus_end": corpus["end"] if corpus else None,
