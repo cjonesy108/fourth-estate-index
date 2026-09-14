@@ -1,12 +1,13 @@
 """
 NPR article ingester.
 
-Public people pages list stories. Full text is read from text.npr.org.
-No login. No official API key.
+Lists stories from public people + monthly archive pages.
+Reads full text from text.npr.org. No login.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from datetime import datetime, timezone
@@ -19,11 +20,14 @@ from backend.ingestion.article_ingestion import IngestionResult, ParsedArticle
 
 logger = logging.getLogger(__name__)
 
-UA = "FourthEstateIndex/0.4 (+https://fourth-estate-index.vercel.app)"
-MIN_WORD_COUNT = 80
-STORY_RE = re.compile(
-    r"https://www\.npr\.org/(20\d{2}/\d{2}/\d{2}/[^\s\"'?#]+)"
+UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/128.0.0.0 Safari/537.36"
 )
+MIN_WORD_COUNT = 80
+MAX_STORIES = 80
+STORY_RE = re.compile(r"https?://(?:www\.|text\.)?npr\.org/(20\d{2}/\d{2}/\d{2}/[^\s\"'?#]+)")
 TITLE_RE = re.compile(r"<h1[^>]*class=\"story-title\"[^>]*>(.*?)</h1>", re.I | re.S)
 TITLE_FALLBACK_RE = re.compile(r"<title>(.*?)</title>", re.I | re.S)
 BODY_RE = re.compile(
@@ -41,10 +45,15 @@ def _strip_html(html: str) -> str:
 class NPRIngester:
     source_name = "npr"
 
-    def __init__(self, timeout: float = 30.0):
+    def __init__(self, timeout: float = 60.0):
         self.client = httpx.AsyncClient(
             timeout=timeout,
-            headers={"User-Agent": UA, "Accept": "text/html"},
+            headers={
+                "User-Agent": UA,
+                "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.npr.org/",
+            },
             follow_redirects=True,
         )
 
@@ -56,6 +65,23 @@ class NPRIngester:
 
     async def close(self):
         await self.client.aclose()
+
+    async def _get(self, url: str, params: Optional[dict] = None) -> Optional[httpx.Response]:
+        last: Optional[Exception] = None
+        for attempt in range(5):
+            try:
+                resp = await self.client.get(url, params=params)
+                if resp.status_code in (403, 429, 503):
+                    last = RuntimeError(f"HTTP {resp.status_code}")
+                    await asyncio.sleep(2 * (attempt + 1))
+                    continue
+                resp.raise_for_status()
+                return resp
+            except Exception as e:
+                last = e
+                await asyncio.sleep(1.5 * (attempt + 1))
+        logger.warning("GET failed %s params=%s err=%r", url, params, last)
+        return None
 
     async def ingest(
         self,
@@ -70,12 +96,12 @@ class NPRIngester:
         start = date_from.replace(tzinfo=date_from.tzinfo or timezone.utc)
         end = date_to.replace(tzinfo=date_to.tzinfo or timezone.utc)
 
-        urls = await self._list_story_urls(author_slug)
+        urls = await self._list_story_urls(author_slug, start, end)
         if not urls:
             result.errors.append(f"no stories listed for {author_slug}")
             return [], result
 
-        for url in urls:
+        for url in urls[:MAX_STORIES]:
             if url in existing_ids:
                 result.articles_skipped_duplicate += 1
                 continue
@@ -84,9 +110,7 @@ class NPRIngester:
                 result.articles_skipped_no_body += 1
                 continue
             pub = parsed.published_at.replace(tzinfo=timezone.utc)
-            if pub > end:
-                continue
-            if pub < start:
+            if pub > end or pub < start:
                 continue
             if parsed.guardian_id in existing_ids:
                 result.articles_skipped_duplicate += 1
@@ -104,44 +128,61 @@ class NPRIngester:
 
         return articles, result
 
-    async def _list_story_urls(self, author_slug: str) -> list[str]:
-        seen: list[str] = []
+    async def _list_story_urls(
+        self, author_slug: str, start: datetime, end: datetime
+    ) -> list[str]:
         found: set[str] = set()
-        for page in range(1, 9):
-            url = f"https://www.npr.org/people/{author_slug}"
-            params = {"page": page} if page > 1 else None
-            try:
-                resp = await self.client.get(url, params=params)
-                resp.raise_for_status()
-            except Exception as e:
-                logger.warning("NPR people page %s p%s failed: %s", author_slug, page, e)
+        seen: list[str] = []
+
+        pages = [f"https://www.npr.org/people/{author_slug}"]
+        year, month = start.year, start.month
+        while datetime(year, month, 1, tzinfo=timezone.utc) <= end:
+            pages.append(
+                f"https://www.npr.org/people/{author_slug}/archive?date={month}-28-{year}"
+            )
+            if month == 12:
+                year += 1
+                month = 1
+            else:
+                month += 1
+            if len(pages) > 50:
                 break
-            page_urls = STORY_RE.findall(resp.text)
-            new = 0
-            for path in page_urls:
+
+        for page_url in pages:
+            resp = await self._get(page_url)
+            if resp is None:
+                continue
+            for path in STORY_RE.findall(resp.text):
                 full = f"https://www.npr.org/{path}"
                 if full not in found:
                     found.add(full)
                     seen.append(full)
-                    new += 1
-            if new == 0:
-                break
         return seen
 
     async def _fetch_story(self, url: str) -> Optional[ParsedArticle]:
         path = urlparse(url).path.lstrip("/")
-        text_url = f"https://text.npr.org/{path}"
-        try:
-            resp = await self.client.get(text_url)
-            resp.raise_for_status()
-        except Exception:
+        html = None
+        for candidate in (f"https://text.npr.org/{path}", url):
+            resp = await self._get(candidate)
+            if resp is None:
+                continue
+            html = resp.text
+            if "paragraphs-container" in html or "story-title" in html:
+                break
+        if not html:
             return None
-        html = resp.text
         title_m = TITLE_RE.search(html) or TITLE_FALLBACK_RE.search(html)
         headline = _strip_html(title_m.group(1) if title_m else "")
         headline = re.sub(r"\s+:\s+NPR$", "", headline).strip()
         body_m = BODY_RE.search(html)
         body = _strip_html(body_m.group(1) if body_m else "")
+        if not body:
+            # www storytext fallback
+            body_m = re.search(
+                r'<div[^>]*id="storytext"[^>]*>(.*?)</div>', html, re.I | re.S
+            )
+            if body_m:
+                body = _strip_html(body_m.group(1))
         if not headline:
             return None
         published_at = self._date_from_url(url)
