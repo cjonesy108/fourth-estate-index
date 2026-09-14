@@ -1,0 +1,39 @@
+{
+  "as_of": "2026-09-13",
+  "rule_extra": "Controller personal gifts stay on the person. Opening The Atlantic does not open Powell Jobs. Opening WJLA does not open David D. Smith.",
+  "records": [
+    {
+      "entity": "laurene-powell-jobs",
+      "layer": "individual",
+      "cycle": "2020-2024",
+      "amount_usd": 3400000,
+      "amount_label": ">$3.4M since 2020 (personal + Emerson-attributed federal)",
+      "party_lean": "D",
+      "summary": "Powell Jobs's federal file is Democratic and large. FEC itemized gifts in the 2023–24 window include $929,000 (20 Sep 2023) and $923,000 (29 Aug 2024) to Biden Victory Fund, $123,900 × 2 to the DNC, $3,300 to Harris, and $10k state-party max-outs. Fortune tallied more than $3.4M since 2020 across Powell Jobs and Emerson Collective. Different checkbook from The Atlantic newsroom.",
+      "source_url": "https://www.opensecrets.org/donor-lookup/results?name=Laurene+Powell+Jobs&cycle=2024",
+      "source_label": "OpenSecrets donor lookup / FEC; Fortune Sep 2024"
+    },
+    {
+      "entity": "david-d-smith",
+      "layer": "individual",
+      "cycle": "2016-2017",
+      "amount_usd": null,
+      "amount_label": "hard-money + party max-outs, both parties",
+      "party_lean": "mixed",
+      "summary": "David D. Smith of Cockeysville / Hunt Valley (Sinclair CEO, later executive chairman) has a mixed federal file, not a Super PAC ledger. Same window: $33,000 and $30,000 to the DSCC (Feb 2016, May 2017), $10,000 to the NRCC (Mar 2017), candidate max-outs to Schumer, Wyden, Blunt, Tim Scott, and McCarthy, plus NABPAC. Common name — only the Sinclair employer + Maryland address rows are used. Not Sinclair PAC and not WJLA.",
+      "source_url": "https://www.opensecrets.org/donor-lookup/results?employ=Sinclair&name=David+Smith",
+      "source_label": "OpenSecrets donor lookup / FEC (Sinclair employer filter)"
+    },
+    {
+      "entity": "sinclair-inc",
+      "layer": "parent_pac",
+      "cycle": "2024-2026",
+      "amount_usd": 33000,
+      "amount_label": "employee PAC C00562660 — $33k raised 2025–26 H1",
+      "party_lean": "mixed",
+      "summary": "Sinclair Broadcast Group PAC is an employee PAC, not treasury money and not David D. Smith's personal file. FEC shows $33k raised and $26.5k spent in the 2025–26 window through 30 Jun 2026. OpenSecrets lists 18 large 2024-cycle gifts into the PAC from Sinclair officers in Cockeysville, none of them a newsroom budget.",
+      "source_url": "https://www.fec.gov/data/committee/C00562660/",
+      "source_label": "FEC — Sinclair Broadcast Group PAC"
+    }
+  ]
+}

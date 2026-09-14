@@ -9,6 +9,7 @@ import contributionsFile from "@/data/contributions.json";
 import contributionAdds from "@/data/contributions-additions.json";
 import contributionOfficers from "@/data/contributions-officers.json";
 import contributionEllison from "@/data/contributions-ellison.json";
+import contributionMore from "@/data/contributions-more.json";
 import peopleFile from "@/data/people.json";
 
 export type EntityType =
@@ -130,6 +131,16 @@ type GroupFile = {
   affiliations: Affiliation[];
 };
 
+function dedupeEdges(edges: OwnershipEdge[]): OwnershipEdge[] {
+  const map = new Map<string, OwnershipEdge>();
+  for (const e of edges) {
+    const k = `${e.holder}|${e.asset}|${e.type}`;
+    const prev = map.get(k);
+    if (!prev || e.as_of > prev.as_of) map.set(k, e);
+  }
+  return Array.from(map.values());
+}
+
 const groupsFile = groups as GroupFile;
 const groupsFile2 = groups2 as GroupFile;
 
@@ -157,21 +168,22 @@ const data: OwnershipGraph = {
     ...directoryFile.entities,
     ...people.entities,
   ],
-  edges: [
+  edges: dedupeEdges([
     ...(graph as OwnershipGraph).edges,
     ...(additions.edges as OwnershipEdge[]),
     ...groupsFile.edges,
     ...groupsFile2.edges,
     ...((thirteenF as { edges: OwnershipEdge[] }).edges),
     ...(directoryFile.edges ?? []),
-  ],
+  ]),
 };
 
 const officerFile = contributionOfficers as { as_of?: string; records: ContributionRecord[] };
 const ellisonFile = contributionEllison as { as_of?: string; records: ContributionRecord[] };
+const moreFile = contributionMore as { as_of?: string; records: ContributionRecord[] };
 
 const contributions = {
-  as_of: ellisonFile.as_of ?? officerFile.as_of ?? (contributionsFile as { as_of: string }).as_of,
+  as_of: moreFile.as_of ?? ellisonFile.as_of ?? officerFile.as_of ?? (contributionsFile as { as_of: string }).as_of,
   rule:
     "Firm PAC, controller, and named officer are three different checkbooks. Opening CNN does not open Fink. Clicking through BlackRock does.",
   records: [
@@ -179,6 +191,7 @@ const contributions = {
     ...(contributionAdds as { records: ContributionRecord[] }).records,
     ...officerFile.records,
     ...ellisonFile.records,
+    ...moreFile.records,
   ],
 };
 
