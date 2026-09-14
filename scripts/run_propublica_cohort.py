@@ -1,9 +1,5 @@
 """
 Ingest and score the ProPublica directory cohort from public full text.
-
-Usage:
-    PYTHONPATH=. python3 scripts/run_propublica_cohort.py
-    PYTHONPATH=. python3 scripts/run_propublica_cohort.py justin-elliott
 """
 
 import asyncio
@@ -19,7 +15,9 @@ load_dotenv()
 
 from backend.analysis.attribution_analysis import AttributionAnalyzer
 from backend.analysis.headline_fidelity import HeadlineFidelityAnalyzer
+from backend.analysis.hedging_language import HedgingLanguageAnalyzer
 from backend.analysis.language_patterns import LanguagePatternsAnalyzer
+from backend.analysis.sentiment_analysis import SentimentDifferentialAnalyzer
 from backend.analysis.source_diversity import SourceDiversityAnalyzer
 from backend.database.db import (
     get_article_id_map,
@@ -29,12 +27,15 @@ from backend.database.db import (
     save_analysis_result,
     save_articles,
     save_citations,
+    save_fec_records,
     save_journalist,
     save_pillar_scores,
     save_publication,
 )
+from backend.ingestion.fec_ingestion import FECIngester
 from backend.ingestion.propublica_ingestion import ProPublicaIngester
 from backend.scoring.corrections_scorer import score_corrections
+from backend.scoring.fec_scorer import score_financial_conflicts
 from backend.scoring.pillar_scorer import build_pillar_scores
 
 DATE_FROM = datetime(2023, 1, 1)
@@ -48,6 +49,17 @@ def load_cohort() -> list[dict]:
     return [j for j in extra.get("journalists", []) if j.get("primary_outlet") == "propublica"]
 
 
+async def _run_analyzer(conn, journalist_id, article_id_map, analyzer, corpus, key):
+    print(f"  Running {key} ({len(corpus)} articles)...")
+    analysis = analyzer.run(corpus)
+    score = analysis.dimensions.get(key)
+    analysis_id = await save_analysis_result(conn, journalist_id, analysis)
+    if analysis.citations:
+        await save_citations(conn, analysis_id, analysis.citations, article_id_map)
+    print(f"  {key}: {score}")
+    return score
+
+
 async def run_journalist(conn, publication_id: str, journalist: dict):
     name = journalist["full_name"]
     slug = journalist["slug"]
@@ -56,10 +68,7 @@ async def run_journalist(conn, publication_id: str, journalist: dict):
     print(f"{'─' * 60}")
 
     journalist_id = await save_journalist(
-        conn,
-        full_name=name,
-        slug=slug,
-        primary_outlet="ProPublica",
+        conn, full_name=name, slug=slug, primary_outlet="ProPublica"
     )
     print(f"  ID: {journalist_id}")
 
@@ -79,9 +88,6 @@ async def run_journalist(conn, publication_id: str, journalist: dict):
         f"Skipped short: {result.articles_skipped_short}  "
         f"No body: {result.articles_skipped_no_body}"
     )
-    if result.errors:
-        print(f"  Errors: {result.errors}")
-
     if articles:
         saved = await save_articles(conn, journalist_id, publication_id, articles, source_api="propublica")
         print(f"  Saved to DB: {saved}")
@@ -105,45 +111,51 @@ async def run_journalist(conn, publication_id: str, journalist: dict):
         return
 
     dimension_results = {}
+    dimension_results["headline_fidelity"] = await _run_analyzer(
+        conn, journalist_id, article_id_map, HeadlineFidelityAnalyzer(), corpus, "headline_fidelity"
+    )
+    dimension_results["attribution_patterns"] = await _run_analyzer(
+        conn, journalist_id, article_id_map, AttributionAnalyzer(), corpus[:25], "attribution_patterns"
+    )
+    dimension_results["hedging_language"] = await _run_analyzer(
+        conn, journalist_id, article_id_map, HedgingLanguageAnalyzer(), corpus[:25], "hedging_language"
+    )
+    dimension_results["language_patterns"] = await _run_analyzer(
+        conn, journalist_id, article_id_map, LanguagePatternsAnalyzer(), corpus[:30], "language_patterns"
+    )
+    sentiment_score = await _run_analyzer(
+        conn, journalist_id, article_id_map, SentimentDifferentialAnalyzer(), corpus[:30], "sentiment_differential"
+    )
+    dimension_results["sentiment_differential"] = sentiment_score
+    dimension_results["source_diversity"] = await _run_analyzer(
+        conn, journalist_id, article_id_map, SourceDiversityAnalyzer(), corpus[:15], "source_diversity"
+    )
 
-    print(f"  Running headline fidelity ({len(corpus)} articles)...")
-    hl_analysis = HeadlineFidelityAnalyzer().run(corpus)
-    hl_score = hl_analysis.dimensions.get("headline_fidelity")
-    hl_id = await save_analysis_result(conn, journalist_id, hl_analysis)
-    if hl_analysis.citations:
-        await save_citations(conn, hl_id, hl_analysis.citations, article_id_map)
-    dimension_results["headline_fidelity"] = hl_score
-    print(f"  Headline fidelity: {hl_score}")
+    fec_looked_up = False
+    try:
+        fec = FECIngester()
+        fec_result = await fec.ingest(full_name=name)
+        await fec.close()
+        fec_looked_up = True
+        if fec_result.records_auto_ingested:
+            n = await save_fec_records(conn, journalist_id, fec_result.records_auto_ingested)
+            print(f"  FEC saved {n} of {len(fec_result.records_auto_ingested)} auto records")
+        else:
+            print("  FEC lookup complete — no auto-ingest hits")
+    except Exception as e:
+        print(f"  FEC lookup failed: {e}")
 
-    at_corpus = corpus[:25]
-    print(f"  Running attribution patterns ({len(at_corpus)} articles)...")
-    at_analysis = AttributionAnalyzer().run(at_corpus)
-    at_score = at_analysis.dimensions.get("attribution_patterns")
-    at_id = await save_analysis_result(conn, journalist_id, at_analysis)
-    if at_analysis.citations:
-        await save_citations(conn, at_id, at_analysis.citations, article_id_map)
-    dimension_results["attribution_patterns"] = at_score
-    print(f"  Attribution patterns: {at_score}")
-
-    lp_corpus = corpus[:30]
-    print(f"  Running language patterns ({len(lp_corpus)} articles)...")
-    lp_analysis = LanguagePatternsAnalyzer().run(lp_corpus)
-    lp_score = lp_analysis.dimensions.get("language_patterns")
-    lp_id = await save_analysis_result(conn, journalist_id, lp_analysis)
-    if lp_analysis.citations:
-        await save_citations(conn, lp_id, lp_analysis.citations, article_id_map)
-    dimension_results["language_patterns"] = lp_score
-    print(f"  Language patterns: {lp_score}")
-
-    sd_corpus = corpus[:15]
-    print(f"  Running source diversity ({len(sd_corpus)} articles)...")
-    sd_analysis = SourceDiversityAnalyzer().run(sd_corpus)
-    sd_score = sd_analysis.dimensions.get("source_diversity")
-    sd_id = await save_analysis_result(conn, journalist_id, sd_analysis)
-    if sd_analysis.citations:
-        await save_citations(conn, sd_id, sd_analysis.citations, article_id_map)
-    dimension_results["source_diversity"] = sd_score
-    print(f"  Source diversity: {sd_score}")
+    stored_fec = await conn.fetch(
+        "SELECT amount FROM fec_records WHERE journalist_id = $1", journalist_id
+    )
+    if stored_fec:
+        fec_looked_up = True
+    fec_scores = score_financial_conflicts([dict(r) for r in stored_fec], looked_up=fec_looked_up)
+    dimension_results["financial_conflicts"] = fec_scores["financial_conflicts"]
+    print(
+        f"  financial_conflicts={fec_scores['financial_conflicts']} "
+        f"count={fec_scores['contribution_count']} looked_up={fec_looked_up}"
+    )
 
     stored_corrections = await conn.fetch(
         "SELECT correction_type, days_to_correction FROM corrections WHERE journalist_id = $1",
@@ -158,17 +170,11 @@ async def run_journalist(conn, publication_id: str, journalist: dict):
     dimension_results["corrections_frequency"] = correction_scores["corrections_frequency"]
     dimension_results["corrections_severity"] = correction_scores["corrections_severity"]
     dimension_results["corrections_velocity"] = correction_scores.get("corrections_velocity")
-    print(
-        f"  Corrections ingested={ingested} count={correction_scores.get('corrections_count', 0)}"
-    )
+    print(f"  Corrections ingested={ingested}")
 
     scores = build_pillar_scores(dimension_results)
     await save_pillar_scores(
-        conn,
-        journalist_id,
-        scores,
-        corpus_size=corpus_size,
-        methodology_version=METHODOLOGY,
+        conn, journalist_id, scores, corpus_size=corpus_size, methodology_version=METHODOLOGY
     )
     status = "scored" if scores.get("composite_score") is not None else "insufficient"
     await conn.execute(
@@ -199,10 +205,7 @@ async def main():
     conn = await get_conn()
     try:
         pub_id = await save_publication(
-            conn,
-            name="ProPublica",
-            domain="propublica.org",
-            api_source="propublica",
+            conn, name="ProPublica", domain="propublica.org", api_source="propublica"
         )
         for journalist in cohort:
             try:
